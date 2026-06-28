@@ -53,8 +53,9 @@
 ### `/docs/04-decisiones/` — Decisiones técnicas
 | Archivo | Contenido | Estado |
 |---|---|---|
-| `DECISION-LOG.md` | DECISION-001 y DECISION-002 registradas | 2 entradas |
-| `DECISION-002-stack-tecnologico-inicial.md` | Análisis completo del stack: framework, DB, auth, WhatsApp, LLM, arquitectura, seguridad | Completo |
+| `DECISION-LOG.md` | Índice de decisiones — 3 entradas registradas | 3 entradas |
+| `DECISION-002-stack-tecnologico-inicial.md` | Stack completo: Next.js, Supabase, Claude, Twilio, Vercel, Docker | Completo |
+| `DECISION-003-multitenant-rls.md` | Modelo multi-tenant: profiles, producers, producer_members, RLS, opt-out, service role | Completo |
 
 ---
 
@@ -64,10 +65,14 @@
 |---|---|---|
 | 001 | Arrancar con documentación completa antes de cualquier línea de código | 2026-06-28 |
 | 002 | Stack: Next.js + TypeScript + Supabase + Claude + Twilio sandbox + Vercel + Docker | 2026-06-28 |
+| 003 | Multi-tenant: producer_id ≠ auth.uid(). Tres tablas: profiles, producers, producer_members | 2026-06-28 |
 | — | MVP es el Recuperador de Cotizaciones por WhatsApp, no una suite completa | 2026-06-28 |
 | — | La IA asiste y escala; no emite, no promete cobertura, no interpreta pólizas | 2026-06-28 |
 | — | Capa de abstracción LLM obligatoria: el código de negocio no llama a Anthropic directamente | 2026-06-28 |
-| — | RLS activo desde la primera migración de base de datos | 2026-06-28 |
+| — | RLS via función get_my_producer_ids(). Todas las tablas de negocio llevan producer_id | 2026-06-28 |
+| — | quote_events es append-only: sin UPDATE ni DELETE | 2026-06-28 |
+| — | Opt-out reforzado con trigger en whatsapp_messages (doble barrera) | 2026-06-28 |
+| — | Tablas en inglés snake_case (DATA_MODEL.md pendiente de actualizar) | 2026-06-28 |
 | — | Docker-friendly desde el inicio (aunque el deploy sea en Vercel) | 2026-06-28 |
 | — | Mercado inicial: Uruguay. Diseño pensado para escalar a la región | 2026-06-28 |
 | — | Máximo 2 mensajes automáticos por cotización sin intervención humana | 2026-06-28 |
@@ -90,7 +95,7 @@
 
 ## Qué NO se debe hacer todavía
 
-- **No escribir código todavía.** El stack está decidido pero no se ha configurado el entorno.
+- **No escribir código todavía.** El stack y el modelo de datos están definidos pero DATA_MODEL.md necesita actualizarse primero.
 - **No crear infraestructura productiva** hasta tener los templates HSM aprobados por Meta.
 - **No contactar prospectos reales** con mensajes de prueba.
 - **No comprometerse con productores** en fechas de entrega sin tener el stack definido.
@@ -104,12 +109,14 @@
 ```
 ✅ 1. Documentación funcional completa (DECISION-001)
 ✅ 2. Stack tecnológico definido (DECISION-002)
-   3. Entrevistar 3–5 productores → DISCOVERY_QUESTIONS.md
-   4. Crear cuentas: Supabase, Anthropic API, Twilio sandbox
-   5. Diseñar y enviar templates HSM a Meta (1–7 días hábiles de aprobación)
-   6. Configurar repositorio: Next.js + TypeScript + Supabase + Dockerfile
-   7. Escribir primeras migraciones de base de datos con RLS
-   8. Iniciar programación siguiendo CODING_RULES.md
+✅ 3. Modelo multi-tenant y RLS definido (DECISION-003)
+   4. Actualizar DATA_MODEL.md con nombres en inglés y modelo de tres tablas
+   5. Entrevistar 3–5 productores → DISCOVERY_QUESTIONS.md
+   6. Crear cuentas: Supabase, Anthropic API, Twilio sandbox
+   7. Diseñar y enviar templates HSM a Meta (1–7 días hábiles de aprobación)
+   8. Configurar repositorio: Next.js + TypeScript + Supabase + Dockerfile
+   9. Escribir primeras migraciones de Supabase con RLS
+  10. Iniciar programación siguiendo CODING_RULES.md
 ```
 
 ---

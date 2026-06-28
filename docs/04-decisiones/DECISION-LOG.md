@@ -79,4 +79,42 @@ un punto de referencia claro sobre cómo debe ser el código.
 
 ---
 
-*Próximas decisiones pendientes: proveedor WABA definitivo (DECISION-003), número WABA del piloto, retención de datos.*
+## [DECISION-003] Modelo multi-tenant, usuarios y RLS
+
+- **Fecha:** 2026-06-28
+- **Estado:** Aceptada
+- **Documento completo:** [DECISION-003-multitenant-rls.md](DECISION-003-multitenant-rls.md)
+
+### Decisión tomada
+
+`producer_id` **no es** `auth.uid()`. Son entidades separadas.
+
+Tres tablas de identidad:
+- `profiles` — extiende `auth.users`, datos personales del usuario (1:1).
+- `producers` — la organización comercial / tenant, con su propio UUID.
+- `producer_members` — tabla puente con `role`. En MVP: 1 usuario/productor con rol `owner`.
+
+Función central de RLS: `get_my_producer_ids()` — devuelve los `producer_id`
+del usuario actual. Todas las políticas de negocio la llaman.
+
+Todas las tablas de negocio llevan `producer_id` explícito (denormalización
+deliberada para rendimiento de RLS y trazabilidad de auditoría).
+
+`quote_events` es append-only: sin política de UPDATE ni DELETE.
+
+El opt-out del prospecto se refuerza con un trigger en `whatsapp_messages`.
+
+Los procesos de sistema (webhook, cron) usan service role y deben registrar
+`actor = 'SISTEMA'` en `quote_events`.
+
+Nomenclatura de tablas: **inglés** en `snake_case`.
+
+### Consecuencias
+
+- Se puede escribir la primera migración de Supabase.
+- DATA_MODEL.md debe actualizarse con nombres en inglés y modelo de tres tablas.
+- El proceso de alta de un productor nuevo queda pendiente de definir.
+
+---
+
+*Próximas decisiones pendientes: proveedor WABA definitivo, retención de datos, gestión de secrets para multi-productor.*
