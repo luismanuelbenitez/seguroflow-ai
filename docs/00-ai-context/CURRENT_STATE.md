@@ -42,7 +42,7 @@
 ### `/docs/05-architecture/` — Arquitectura
 | Archivo | Contenido | Estado |
 |---|---|---|
-| `DATA_MODEL.md` | Tablas, campos, enums, índices, relaciones, consideraciones PII | Completo |
+| `DATA_MODEL.md` | 11 tablas en inglés, multi-tenant, RLS, enums en inglés, índices, trigger opt-out. Alineado con DECISION-003. | Completo v2.0 |
 
 ### `/docs/07-go-to-market/` — Salida al mercado
 | Archivo | Contenido | Estado |
@@ -95,7 +95,7 @@
 
 ## Qué NO se debe hacer todavía
 
-- **No escribir código todavía.** El stack y el modelo de datos están definidos pero DATA_MODEL.md necesita actualizarse primero.
+- **No escribir código de aplicación todavía.** El siguiente paso técnico es la primera migración de Supabase.
 - **No crear infraestructura productiva** hasta tener los templates HSM aprobados por Meta.
 - **No contactar prospectos reales** con mensajes de prueba.
 - **No comprometerse con productores** en fechas de entrega sin tener el stack definido.
@@ -110,12 +110,12 @@
 ✅ 1. Documentación funcional completa (DECISION-001)
 ✅ 2. Stack tecnológico definido (DECISION-002)
 ✅ 3. Modelo multi-tenant y RLS definido (DECISION-003)
-   4. Actualizar DATA_MODEL.md con nombres en inglés y modelo de tres tablas
+✅ 4. DATA_MODEL.md actualizado: inglés, 11 tablas, producer_id, enums, índices
    5. Entrevistar 3–5 productores → DISCOVERY_QUESTIONS.md
    6. Crear cuentas: Supabase, Anthropic API, Twilio sandbox
    7. Diseñar y enviar templates HSM a Meta (1–7 días hábiles de aprobación)
    8. Configurar repositorio: Next.js + TypeScript + Supabase + Dockerfile
-   9. Escribir primeras migraciones de Supabase con RLS
+   9. Escribir primera migración de Supabase (ver sección "Próximo paso" en DATA_MODEL.md)
   10. Iniciar programación siguiendo CODING_RULES.md
 ```
 

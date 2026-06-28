@@ -1,185 +1,504 @@
 # DATA_MODEL.md
 # Modelo de Datos — MVP Recuperador de Cotizaciones
 
-> **Versión:** 1.0 — 2026-06-28
-> **Estado:** Diseño conceptual. No hay código ni migraciones todavía.
-> **Stack asumido:** Relacional (PostgreSQL via Supabase es la opción probable).
->   Si el stack cambia, revisar y actualizar este documento antes de programar.
+> **Versión:** 2.0 — 2026-06-28
+> **Estado:** Diseño conceptual actualizado. No hay migraciones todavía.
+> **Alineado con:** DECISION-002 (Supabase/PostgreSQL), DECISION-003 (multi-tenant y RLS).
 >
-> **Privacidad:** Las entidades marcadas con [PII] contienen datos personales
->   sujetos a la Ley 18.331 de Uruguay. Ver CODING_RULES.md §5.
+> **Nomenclatura:** inglés en `snake_case` para todas las tablas y columnas.
+>
+> **Privacidad:** Las entidades marcadas con `[PII]` contienen datos personales
+> sujetos a la Ley 18.331 de Uruguay. Ver `CODING_RULES.md §5`.
+>
+> **Este documento es diseño de datos, no SQL definitivo.**
+> Las migraciones reales viven en `/supabase/migrations/`.
 
 ---
 
-## Entidades principales
+## Principio fundamental: `producer_id` ≠ `auth.uid()`
 
-### 1. `productores` [PII parcial]
+Esta distinción es crítica. Confundirlos crearía deuda arquitectónica irrecuperable.
 
-Representa a un productor o corredor de seguros usando el sistema.
-En el MVP: un productor = una cuenta = un número de WhatsApp Business.
+| Concepto | Qué representa | De dónde viene |
+|---|---|---|
+| `auth.uid()` | Una **persona física** que inició sesión | Supabase Auth |
+| `producer_id` | Una **organización comercial** (el tenant) | Tabla `producers` |
 
-```
-productores
-├── id                      UUID, PK
-├── nombre_display          TEXT — cómo se presenta en los mensajes ("Gonzalo Seguros")
-├── email                   TEXT [PII] — para notificaciones del sistema
-├── telefono_personal       TEXT [PII] — para recibir alertas por WhatsApp
-├── numero_waba             TEXT — número de WhatsApp Business (E.164, ej: +59899123456)
-├── waba_api_key_ref        TEXT — referencia al secreto en vault (NO la key en sí)
-├── umbral_espera_horas     INTEGER DEFAULT 48 — cuándo activar el seguimiento
-├── modo_envio              ENUM('manual', 'automatico') DEFAULT 'manual'
-├── firma_mensaje           TEXT — texto de cierre para los mensajes
-├── activo                  BOOLEAN DEFAULT true
-├── creado_en               TIMESTAMPTZ DEFAULT now()
-└── actualizado_en          TIMESTAMPTZ DEFAULT now()
-```
-
-**Notas de diseño:**
-- `waba_api_key_ref` almacena solo un identificador (ej.: nombre del secreto en
-  AWS Secrets Manager o variable de entorno), nunca la clave real.
-- En el MVP un productor gestiona su propia cuenta. Multi-tenant viene después.
+Un `producer` puede tener varios usuarios en el futuro (el productor más su
+asistente, una corredora con varios vendedores). En el MVP hay 1 usuario por
+productor, pero el modelo no impone esa restricción: la tabla `producer_members`
+la maneja desde el día uno.
 
 ---
 
-### 2. `prospectos` [PII]
+## Capa de identidad y tenancy (3 tablas)
 
-Persona o empresa que recibió una cotización. Puede tener múltiples cotizaciones
-a lo largo del tiempo con el mismo productor.
+Estas tres tablas gobiernan quién puede ver qué. El resto del sistema las
+referencia pero no debería depender de su estructura interna.
+
+---
+
+### `auth.users` — gestionado por Supabase
+
+No se define aquí. Supabase Auth lo mantiene internamente. Solo importa que
+`auth.uid()` devuelve el UUID del usuario autenticado en la sesión actual.
+
+Toda política RLS que necesite verificar la identidad del usuario actual usa
+`auth.uid()` — nunca se pasa como parámetro ni se almacena en tablas de negocio.
+
+---
+
+### `profiles` — datos personales del usuario
+
+Extiende `auth.users` con información de la persona. Relación 1:1.
+Se crea automáticamente via trigger en cuanto se registra un usuario.
 
 ```
-prospectos
-├── id                      UUID, PK
-├── productor_id            UUID, FK → productores.id
-├── nombre                  TEXT [PII] — nombre completo o razón social
-├── telefono                TEXT [PII] — número en formato E.164
-├── email                   TEXT [PII] NULLABLE
-├── opt_out                 BOOLEAN DEFAULT false — si pidió no recibir más mensajes
-├── opt_out_en              TIMESTAMPTZ NULLABLE
-├── notas_internas          TEXT NULLABLE — notas del productor, nunca exponer al prospecto
-├── creado_en               TIMESTAMPTZ DEFAULT now()
-└── actualizado_en          TIMESTAMPTZ DEFAULT now()
+profiles
+├── id              UUID, PK — IGUAL a auth.uid() (FK implícita a auth.users.id)
+├── full_name       TEXT
+├── display_name    TEXT        — nombre que aparece en la UI ("Gonzalo R.")
+├── phone           TEXT [PII]  — teléfono personal, para recibir alertas del sistema
+├── avatar_url      TEXT NULLABLE
+├── created_at      TIMESTAMPTZ DEFAULT now()
+└── updated_at      TIMESTAMPTZ DEFAULT now()
 ```
 
-**Restricción crítica:**
-- Si `opt_out = true`, el sistema NUNCA envía mensajes a este número desde este productor.
-- El par `(productor_id, telefono)` debe ser único: un mismo número no puede estar
-  duplicado para el mismo productor.
-
-```sql
-UNIQUE (productor_id, telefono)
+**RLS:** cada usuario solo puede leer y editar su propio perfil.
+```
+POLICY: id = auth.uid()
 ```
 
 ---
 
-### 3. `cotizaciones`
+### `producers` — la organización comercial (el tenant)
 
-El objeto central del sistema. Una cotización es una oferta de seguro que el
-productor hizo al prospecto y que todavía no fue cerrada (ni ganada ni perdida).
+Representa al productor individual, corredor o corredora que usa el sistema.
+Su `id` es el `producer_id` que viaja por todas las tablas de negocio.
+Este UUID **no es** el `auth.uid()` de ningún usuario.
 
 ```
-cotizaciones
-├── id                      UUID, PK
-├── productor_id            UUID, FK → productores.id
-├── prospecto_id            UUID, FK → prospectos.id
-├── tipo_seguro             ENUM('auto','hogar','vida','comercio','otro')
-├── descripcion_riesgo      TEXT NULLABLE — "Toyota Hilux 2021", "Apto. Pocitos"
-├── aseguradora             TEXT NULLABLE — con quién se cotizó
-├── monto_cotizado          NUMERIC(12,2) NULLABLE
-├── moneda                  CHAR(3) DEFAULT 'UYU' — ISO 4217: UYU, USD
-├── fecha_cotizacion        DATE — fecha en que se emitió la cotización
-├── fecha_vencimiento       DATE NULLABLE — hasta cuándo es válida
-├── estado                  ENUM(ver tabla de estados abajo) DEFAULT 'NUEVA'
-├── canal_origen            TEXT NULLABLE — cómo llegó el lead
-├── notas_internas          TEXT NULLABLE
-├── mensaje_aprobado        TEXT NULLABLE — texto final del primer mensaje (guardado post-aprobación)
-├── creado_en               TIMESTAMPTZ DEFAULT now()
-└── actualizado_en          TIMESTAMPTZ DEFAULT now()
+producers
+├── id                  UUID, PK  — el producer_id que referencia todo el sistema
+├── name                TEXT      — nombre comercial ("Seguros Rodríguez", "Gómez & Asoc.")
+├── contact_name        TEXT      — persona principal de contacto
+├── waba_number         TEXT      — número WhatsApp Business en E.164 (+59899123456)
+├── waba_provider       TEXT      — 'twilio' | '360dialog' | 'meta_direct'
+├── waba_config_ref     TEXT      — referencia al secreto en vault (NUNCA la key real)
+├── follow_up_hours     INTEGER DEFAULT 48  — umbral para activar seguimiento
+├── send_mode           TEXT DEFAULT 'manual'  — 'manual' | 'automatic'
+├── message_signature   TEXT      — texto de cierre para mensajes salientes
+├── plan                TEXT DEFAULT 'pilot'   — 'pilot' | 'starter' | 'pro' | 'enterprise'
+├── status              TEXT DEFAULT 'active'  — 'active' | 'inactive' | 'suspended'
+├── created_at          TIMESTAMPTZ DEFAULT now()
+└── updated_at          TIMESTAMPTZ DEFAULT now()
 ```
 
-**Valores del ENUM `estado`:**
+**Nota de seguridad:** `waba_config_ref` almacena únicamente un identificador
+(ej.: nombre de la variable de entorno o clave en Supabase Vault). La API key
+real de WhatsApp nunca vive en esta columna ni en ninguna tabla.
 
-| Valor | Descripción |
+**RLS:** un usuario puede leer los producers a los que pertenece vía
+`producer_members`. Solo el service role puede crear nuevos producers.
+
+---
+
+### `producer_members` — vincula usuarios con producers
+
+La tabla puente. Define qué usuarios pertenecen a qué producer y con qué rol.
+En el MVP siempre habrá exactamente una fila por producer con `role = 'owner'`.
+El diseño no impone ese límite.
+
+```
+producer_members
+├── id              UUID, PK
+├── producer_id     UUID, FK → producers.id
+├── user_id         UUID, FK → auth.users.id
+├── role            TEXT DEFAULT 'owner'
+│                   Valores MVP:    'owner'
+│                   Valores futuros: 'admin' | 'agent' | 'viewer'
+├── is_active       BOOLEAN DEFAULT true
+├── invited_at      TIMESTAMPTZ DEFAULT now()
+├── accepted_at     TIMESTAMPTZ NULLABLE  — null si la invitación no fue aceptada aún
+└── created_at      TIMESTAMPTZ DEFAULT now()
+
+UNIQUE (producer_id, user_id)
+```
+
+**MVP:** el proceso de invitación no existe todavía. Los miembros se insertan
+manualmente en el onboarding. La columna `role` existe pero en el MVP no se
+evalúa en lógica de negocio — solo se verifica la membresía activa.
+
+**RLS:** un usuario puede ver sus propias membresías.
+```
+POLICY: user_id = auth.uid()
+```
+
+---
+
+## Función de acceso: `get_my_producer_ids()`
+
+Esta función es la **única fuente de verdad** para las políticas RLS.
+Todas las tablas de negocio la usan. No se repite la lógica de membresía en
+ningún otro lugar.
+
+```
+FUNCIÓN: get_my_producer_ids()
+RETORNA: SETOF UUID
+LENGUAJE: SQL
+
+INTENCIÓN:
+  Devuelve todos los producer_id a los que pertenece el usuario de la sesión
+  actual (auth.uid()), filtrando solo membresías activas.
+
+IMPLEMENTACIÓN (conceptual — el SQL exacto va en la migración):
+  SELECT producer_id
+  FROM producer_members
+  WHERE user_id = auth.uid()
+    AND is_active = true
+```
+
+**Requisitos de seguridad para la implementación real:**
+
+1. **`SECURITY DEFINER`** — necesario para que la función pueda leer
+   `producer_members` aunque el usuario no tenga acceso directo a esa tabla.
+
+2. **`SET search_path = public, pg_temp`** (o el schema que corresponda) —
+   obligatorio en funciones `SECURITY DEFINER` para evitar que un atacante
+   manipule `search_path` e inyecte objetos maliciosos que la función ejecute
+   con privilegios elevados.
+
+3. **Referencias schema-qualified** — dentro de la función, referenciar tablas
+   como `public.producer_members`, no solo `producer_members`.
+
+4. **`STABLE`** — marcar la función como estable porque no modifica datos y su
+   resultado es constante dentro de una transacción.
+
+**Patrón de uso en políticas RLS:**
+```
+-- Patrón estándar aplicado en todas las tablas de negocio:
+USING (producer_id IN (SELECT get_my_producer_ids()))
+```
+
+---
+
+## Capa de datos de negocio (7 tablas)
+
+Todas llevan `producer_id` explícito — no derivado via JOIN.
+Esto es una denormalización deliberada por dos razones:
+1. **Rendimiento RLS:** la política no necesita JOIN, solo `producer_id IN (...)`.
+2. **Trazabilidad:** cualquier fila identifica su tenant sin navegar relaciones.
+
+---
+
+### `prospects` `[PII]`
+
+Persona o empresa que recibió una cotización. Un mismo prospecto puede tener
+múltiples cotizaciones con el mismo producer a lo largo del tiempo.
+
+```
+prospects
+├── id                  UUID, PK
+├── producer_id         UUID, FK → producers.id
+├── full_name           TEXT [PII]  — nombre completo o razón social
+├── phone               TEXT [PII]  — número en E.164 (+59899XXXXXX)
+├── email               TEXT [PII] NULLABLE
+├── consent_status      TEXT DEFAULT 'unknown'
+│                       Valores: 'unknown' | 'granted' | 'revoked'
+├── opt_out             BOOLEAN DEFAULT false
+├── opt_out_at          TIMESTAMPTZ NULLABLE
+├── internal_notes      TEXT NULLABLE  — notas del producer, nunca exponer al prospecto
+├── archived_at         TIMESTAMPTZ NULLABLE  — soft delete, preserva historial de opt-out
+├── created_at          TIMESTAMPTZ DEFAULT now()
+└── updated_at          TIMESTAMPTZ DEFAULT now()
+
+UNIQUE (producer_id, phone)
+```
+
+**Regla de opt-out:** si `opt_out = true`, el sistema nunca envía mensajes a
+este número desde este producer. Se refuerza con un trigger en `whatsapp_messages`
+(ver DECISION-003 §7 — doble barrera).
+
+**Soft delete obligatorio:** los prospects no se borran con `DELETE`. Se archivan
+con `archived_at`. Preservar el registro de opt-out es un requisito legal.
+
+**RLS:**
+```
+POLICY SELECT/INSERT/UPDATE: producer_id IN (SELECT get_my_producer_ids())
+POLICY DELETE: no existe — solo soft delete vía archived_at
+```
+
+---
+
+### `quotes`
+
+El objeto central del sistema. Cada cotización de seguro que el producer generó
+y que está en seguimiento o fue cerrada.
+
+```
+quotes
+├── id                  UUID, PK
+├── producer_id         UUID, FK → producers.id
+├── prospect_id         UUID, FK → prospects.id
+├── insurance_type      TEXT
+│                       Valores: 'auto' | 'home' | 'life' | 'commercial' | 'other'
+├── risk_description    TEXT NULLABLE  — "Toyota Hilux 2021", "Apto. Pocitos 3 amb."
+├── insurer_name        TEXT NULLABLE  — con quién se cotizó
+├── quoted_amount       NUMERIC(12,2) NULLABLE
+├── currency            CHAR(3) DEFAULT 'UYU'  — ISO 4217: UYU, USD
+├── quote_date          DATE       — fecha en que el producer emitió la cotización
+├── expiry_date         DATE NULLABLE  — hasta cuándo es válida
+├── follow_up_start_at  TIMESTAMPTZ NULLABLE
+│                       calculado = quote_date + producers.follow_up_hours
+│                       Si es null, el sistema calcula al activar el seguimiento
+├── status              TEXT DEFAULT 'pending_follow_up'  — ver tabla de estados abajo
+├── origin_channel      TEXT NULLABLE  — cómo llegó el lead (referido, web, llamada...)
+├── internal_notes      TEXT NULLABLE
+├── approved_message    TEXT NULLABLE
+│                       Texto final del mensaje después de aprobación del producer.
+│                       Solo relevante en send_mode = 'manual'.
+├── created_at          TIMESTAMPTZ DEFAULT now()
+└── updated_at          TIMESTAMPTZ DEFAULT now()
+```
+
+**RLS:**
+```
+POLICY SELECT/INSERT/UPDATE: producer_id IN (SELECT get_my_producer_ids())
+POLICY DELETE: no existe — estado 'cancelled' es el estado final de descarte
+```
+
+---
+
+#### Estados de `quotes.status`
+
+| Estado | Descripción | Quién lo asigna |
+|---|---|---|
+| `pending_follow_up` | Ingresada, dentro del período de espera | Sistema |
+| `scheduled` | Umbral vencido, en cola para envío | Sistema |
+| `pending_approval` | Mensaje generado, esperando aprobación (modo manual) | Sistema |
+| `contacted` | Primer mensaje enviado | Sistema |
+| `no_response_1` | 24h sin respuesta al primer mensaje | Sistema |
+| `contacted_2` | Segundo mensaje enviado | Sistema |
+| `responded` | El prospecto respondió algo | Sistema (vía webhook) |
+| `interested` | El prospecto confirmó interés activo | Sistema o Producer |
+| `human_handoff` | El sistema escaló al producer | Sistema |
+| `closed_won` | Póliza emitida | Producer (manual) |
+| `closed_lost` | El prospecto declinó explícitamente | Sistema o Producer |
+| `no_response` | Sin respuesta tras todos los intentos | Sistema |
+| `paused` | El producer pausó el seguimiento | Producer (manual) |
+| `cancelled` | El producer decidió no continuar | Producer (manual) |
+| `opt_out` | El prospecto pidió baja en esta cotización | Sistema (vía webhook) |
+| `error` | Error técnico en el envío, requiere revisión | Sistema |
+
+**Estados terminales** (no se puede salir de ellos sin acción explícita):
+`closed_won`, `closed_lost`, `cancelled`, `opt_out`
+
+---
+
+### `whatsapp_messages` `[PII indirecto]`
+
+Registro de cada mensaje enviado o recibido. Es el log conversacional de la
+cotización. Nunca se borra.
+
+```
+whatsapp_messages
+├── id                  UUID, PK
+├── producer_id         UUID, FK → producers.id  — denormalizado para RLS
+├── quote_id            UUID, FK → quotes.id
+├── prospect_id         UUID, FK → prospects.id  — denormalizado para lookups rápidos
+├── direction           TEXT
+│                       Valores: 'outbound' (sistema→prospecto) | 'inbound' (prospecto→sistema)
+├── body                TEXT [PII indirecto]  — contenido real del mensaje
+├── template_name       TEXT NULLABLE  — nombre del template HSM (solo si outbound)
+├── waba_message_id     TEXT NULLABLE  — ID externo asignado por el proveedor WhatsApp
+├── delivery_status     TEXT NULLABLE
+│                       Valores: 'pending' | 'sent' | 'delivered' | 'read' | 'failed'
+│                       Solo aplica a outbound. Los inbound se consideran 'received'.
+├── sent_at             TIMESTAMPTZ NULLABLE
+├── delivered_at        TIMESTAMPTZ NULLABLE
+├── read_at             TIMESTAMPTZ NULLABLE
+├── failed_at           TIMESTAMPTZ NULLABLE
+├── failure_reason      TEXT NULLABLE
+├── metadata            JSONB NULLABLE  — payload bruto del webhook, para debugging
+└── created_at          TIMESTAMPTZ DEFAULT now()
+```
+
+**Nota de privacidad crítica:** `body` contiene el mensaje real del prospecto.
+Tratar como PII. No loguear en texto plano. No incluir en mensajes de error.
+
+**Sin DELETE:** los mensajes son evidencia del flujo conversacional. Se archiva
+la cotización, no los mensajes individuales.
+
+**Trigger de opt-out:** antes de cada INSERT en esta tabla, un trigger verifica
+que `prospect_id` no tenga `opt_out = true`. Si lo tiene, lanza una excepción.
+Es la segunda barrera después de la validación en capa de aplicación.
+
+**RLS:**
+```
+POLICY SELECT/INSERT: producer_id IN (SELECT get_my_producer_ids())
+POLICY UPDATE: producer_id IN (SELECT get_my_producer_ids())
+  — solo para actualizar delivery_status desde el webhook vía service role
+POLICY DELETE: no existe
+```
+
+---
+
+### `ai_classifications`
+
+Resultado del análisis que el LLM hace sobre cada mensaje inbound del prospecto.
+Una fila por mensaje clasificado. No se modifica una vez creada.
+
+```
+ai_classifications
+├── id                  UUID, PK
+├── producer_id         UUID, FK → producers.id  — denormalizado para RLS
+├── quote_id            UUID, FK → quotes.id
+├── message_id          UUID, FK → whatsapp_messages.id  — el mensaje analizado
+├── classification      TEXT
+│                       Valores: 'interested' | 'needs_more_info' | 'price_objection' |
+│                                'coverage_objection' | 'wants_human_contact' |
+│                                'not_interested' | 'opt_out_requested' |
+│                                'unclear_response' | 'angry_or_sensitive'
+├── confidence          NUMERIC(4,3)  — score 0.000 a 1.000
+├── summary             TEXT  — resumen en lenguaje natural para mostrar al producer
+├── suggested_action    TEXT  — acción sugerida al sistema: 'respond' | 'escalate' | 'close'
+├── requires_human      BOOLEAN  — true si debe derivarse al producer
+├── raw_llm_response    JSONB NULLABLE
+│                       Respuesta completa del LLM para debugging. Nunca exponer en UI.
+└── created_at          TIMESTAMPTZ DEFAULT now()
+```
+
+**Regla de negocio:** si `confidence < 0.80`, el sistema siempre escala al
+producer independientemente del valor de `classification`.
+
+**Sin UPDATE ni DELETE:** la clasificación es inmutable. Si hay un error,
+se crea una nueva clasificación, no se modifica la existente.
+
+**RLS:**
+```
+POLICY SELECT: producer_id IN (SELECT get_my_producer_ids())
+POLICY INSERT: producer_id IN (SELECT get_my_producer_ids())
+  — en la práctica lo inserta el webhook handler vía service role
+POLICY UPDATE/DELETE: no existen
+```
+
+---
+
+### `human_handoffs`
+
+Registra cada derivación al producer humano. Cuando el sistema escala, crea
+una fila aquí. El producer la resuelve desde el dashboard.
+
+```
+human_handoffs
+├── id                  UUID, PK
+├── producer_id         UUID, FK → producers.id  — denormalizado para RLS
+├── quote_id            UUID, FK → quotes.id
+├── prospect_id         UUID, FK → prospects.id  — denormalizado para lookups
+├── reason              TEXT  — motivo de la derivación
+│                       Valores: 'prospect_interested' | 'prospect_has_question' |
+│                                'price_objection' | 'coverage_objection' |
+│                                'human_requested' | 'low_confidence_classification' |
+│                                'angry_or_sensitive' | 'unclear_response' |
+│                                'is_bot_question'
+├── summary             TEXT  — contexto para el producer: qué dijo el prospecto, qué hizo el sistema
+├── status              TEXT DEFAULT 'pending'
+│                       Valores: 'pending' | 'accepted' | 'resolved'
+├── resolved_at         TIMESTAMPTZ NULLABLE
+├── resolution_notes    TEXT NULLABLE  — nota del producer al cerrar la derivación
+└── created_at          TIMESTAMPTZ DEFAULT now()
+```
+
+**RLS:**
+```
+POLICY SELECT/INSERT/UPDATE: producer_id IN (SELECT get_my_producer_ids())
+POLICY DELETE: no existe
+```
+
+---
+
+### `quote_events` — audit log, append-only
+
+Historial completo e inmutable de todo lo que le sucedió a una cotización.
+Cada cambio de estado, cada mensaje enviado, cada clasificación, cada acción
+del producer queda registrada aquí. Es la fuente de verdad histórica.
+
+**Nunca se modifica ni borra una fila de esta tabla.**
+
+```
+quote_events
+├── id                  UUID, PK
+├── producer_id         UUID, FK → producers.id  — denormalizado para RLS
+├── quote_id            UUID, FK → quotes.id
+├── event_type          TEXT  — ver lista de tipos abajo
+├── previous_status     TEXT NULLABLE  — estado de la cotización antes del evento
+├── new_status          TEXT NULLABLE  — estado de la cotización después del evento
+├── actor               TEXT
+│                       Valores: 'system' | 'producer' | 'webhook'
+│                       'system'   = proceso automático interno
+│                       'producer' = acción manual desde el dashboard
+│                       'webhook'  = evento entrante desde WhatsApp
+├── description         TEXT NULLABLE  — descripción legible del evento
+└── created_at          TIMESTAMPTZ DEFAULT now()
+```
+
+**Tipos de evento:**
+
+| event_type | Cuándo ocurre |
 |---|---|
-| `NUEVA` | Ingresada, dentro del período de espera |
-| `EN_SEGUIMIENTO` | Venció el umbral, flujo activo |
-| `PENDIENTE_APROBACION` | Mensaje generado, esperando aprobación del productor (modo manual) |
-| `CONTACTADA` | Primer mensaje enviado |
-| `SIN_RESPUESTA_1` | 24h sin respuesta al primer mensaje |
-| `CONTACTADA_2` | Segundo mensaje enviado |
-| `RESPONDIO` | El prospecto envió algún mensaje |
-| `REQUIERE_ATENCION_HUMANA` | El sistema escaló al productor |
-| `INTERESADO` | El prospecto confirmó interés activo |
-| `CERRADA_GANADA` | Se emitió la póliza |
-| `CERRADA_PERDIDA` | El prospecto declinó |
-| `AGOTADO` | Sin respuesta tras todos los intentos |
-| `PAUSADA` | El productor pausó el flujo |
-| `DESCARTADA` | El productor decidió no continuar |
+| `quote_created` | Se ingresó la cotización |
+| `follow_up_scheduled` | El sistema activó el seguimiento automático |
+| `message_generated` | El LLM generó el texto del mensaje |
+| `producer_approved_message` | El producer aprobó el mensaje (modo manual) |
+| `message_sent` | El mensaje salió por WhatsApp |
+| `message_delivered` | WhatsApp confirmó entrega |
+| `message_read` | WhatsApp confirmó lectura (si disponible) |
+| `message_failed` | Error en el envío |
+| `prospect_replied` | El prospecto respondió algo |
+| `ai_classified_response` | El LLM clasificó la respuesta del prospecto |
+| `human_handoff_created` | El sistema derivó al producer |
+| `human_handoff_resolved` | El producer cerró la derivación |
+| `status_changed` | Cualquier cambio de estado de la cotización |
+| `quote_closed_won` | Póliza emitida |
+| `quote_closed_lost` | Prospecto declinó |
+| `opt_out_received` | El prospecto pidió baja |
+| `follow_up_paused` | El producer pausó el seguimiento |
+| `follow_up_cancelled` | El producer descartó la cotización |
+| `opt_out_blocked_send` | Se intentó enviar a un prospecto con opt-out (bloqueado) |
 
----
-
-### 4. `mensajes`
-
-Registro de cada mensaje enviado o recibido, asociado a una cotización.
-Es el log conversacional. Nunca se borra (solo soft-delete si aplica).
-
+**RLS:**
 ```
-mensajes
-├── id                      UUID, PK
-├── cotizacion_id           UUID, FK → cotizaciones.id
-├── direccion               ENUM('OUTBOUND', 'INBOUND')
-│                           OUTBOUND = sistema → prospecto
-│                           INBOUND  = prospecto → sistema
-├── texto                   TEXT [PII indirecto] — contenido del mensaje
-├── template_id             TEXT NULLABLE — ID del template HSM usado (si OUTBOUND)
-├── estado_entrega          ENUM('ENVIADO','ENTREGADO','LEIDO','FALLIDO') NULLABLE
-│                           Solo aplica a OUTBOUND; INBOUND siempre es 'RECIBIDO'
-├── clasificacion_ia        ENUM(...) NULLABLE — cómo clasificó la IA el mensaje entrante
-│                           Valores: 'POSITIVO','NEGATIVO','PREGUNTA_GUION',
-│                                    'PREGUNTA_FUERA_GUION','OPT_OUT','INCIERTO'
-├── confianza_clasificacion NUMERIC(4,3) NULLABLE — score 0.000 a 1.000
-├── waba_message_id         TEXT NULLABLE — ID del mensaje en WhatsApp Business API
-├── enviado_en              TIMESTAMPTZ DEFAULT now()
-└── metadatos               JSONB NULLABLE — datos adicionales de la API (headers, etc.)
-```
-
-**Nota de privacidad:** `texto` contiene el mensaje real del prospecto. Tratar
-como PII. No loguear en texto plano en logs de producción.
-
----
-
-### 5. `eventos_cotizacion`
-
-Audit log de cada cambio de estado de una cotización. Permite reconstruir
-toda la historia operativa.
-
-```
-eventos_cotizacion
-├── id                      UUID, PK
-├── cotizacion_id           UUID, FK → cotizaciones.id
-├── estado_anterior         TEXT — valor del estado antes del cambio
-├── estado_nuevo            TEXT — valor del estado después del cambio
-├── motivo                  TEXT NULLABLE — razón del cambio (automático o manual)
-├── actor                   ENUM('SISTEMA','PRODUCTOR')
-├── creado_en               TIMESTAMPTZ DEFAULT now()
+POLICY SELECT: producer_id IN (SELECT get_my_producer_ids())
+POLICY INSERT: producer_id IN (SELECT get_my_producer_ids())
+  — los eventos de sistema/webhook los inserta el service role
+POLICY UPDATE: no existe
+POLICY DELETE: no existe
 ```
 
 ---
 
-### 6. `respuestas_aprobadas`
+### `approved_responses`
 
-Banco de respuestas que el productor configuró para que la IA pueda responder
-sin escalamiento. Cada una tiene una o más preguntas "trigger" y una respuesta
-fija (no generada por IA).
+Banco de respuestas predefinidas que el producer configura para que la IA
+pueda responder sin escalar. El sistema busca matching por keywords; si hay
+coincidencia con suficiente confianza, responde con el texto exacto de esta tabla.
 
 ```
-respuestas_aprobadas
-├── id                      UUID, PK
-├── productor_id            UUID, FK → productores.id
-├── pregunta_ejemplo        TEXT — ejemplo de la pregunta del prospecto
-├── keywords                TEXT[] — palabras clave para matching
-├── respuesta               TEXT — texto exacto que la IA enviará
-├── activa                  BOOLEAN DEFAULT true
-├── creado_en               TIMESTAMPTZ DEFAULT now()
+approved_responses
+├── id                  UUID, PK
+├── producer_id         UUID, FK → producers.id
+├── example_question    TEXT      — ejemplo de pregunta del prospecto
+├── keywords            TEXT[]    — palabras clave para matching
+├── response_text       TEXT      — texto exacto que la IA enviará (no generado, fijo)
+├── is_active           BOOLEAN DEFAULT true
+├── created_at          TIMESTAMPTZ DEFAULT now()
+└── updated_at          TIMESTAMPTZ DEFAULT now()
+```
+
+**RLS:**
+```
+POLICY SELECT/INSERT/UPDATE: producer_id IN (SELECT get_my_producer_ids())
+POLICY DELETE: permitido (el producer puede eliminar sus propias respuestas)
 ```
 
 ---
@@ -187,54 +506,123 @@ respuestas_aprobadas
 ## Relaciones entre entidades
 
 ```
-productores (1)
+auth.users (Supabase)
+    │  1:1
+    ▼
+profiles
+    │  N:M
+    ▼
+producer_members ──────► producers (el tenant — producer_id)
+                               │
+                 ┌─────────────┼──────────────────────┐
+                 │             │                       │
+                 ▼             ▼                       ▼
+           prospects        approved_responses    (configuración)
+                 │
+           ┌─────┴──────────────────────────────────┐
+           │                                        │
+           ▼                                        │
+         quotes ◄───────────────────────────────────┘
+           │
+    ┌──────┼───────────────────────────────┐
+    │      │                               │
+    ▼      ▼                               ▼
+whatsapp_  quote_events              human_handoffs
+messages   (append-only)
     │
-    ├──(N) prospectos
-    │           │
-    │           └──(N) cotizaciones (1)
-    │                       │
-    │                       ├──(N) mensajes
-    │                       └──(N) eventos_cotizacion
-    │
-    └──(N) respuestas_aprobadas
+    ▼
+ai_classifications
 ```
+
+**Cardinalidades clave:**
+- Un producer tiene muchos prospects, quotes, y approved_responses.
+- Un prospect puede tener muchas quotes (con el mismo producer).
+- Una quote tiene muchos whatsapp_messages, quote_events y human_handoffs.
+- Un whatsapp_message tiene a lo sumo una ai_classification (el mensaje inbound).
 
 ---
 
-## Índices recomendados (para MVP)
+## Índices recomendados
 
 ```sql
--- Búsqueda de cotizaciones elegibles para activar seguimiento
-CREATE INDEX idx_cotizaciones_estado_fecha
-  ON cotizaciones (estado, fecha_cotizacion)
-  WHERE estado = 'NUEVA';
+-- Detección de cotizaciones elegibles para activar seguimiento (cron job)
+CREATE INDEX idx_quotes_followup
+  ON quotes (producer_id, status, follow_up_start_at)
+  WHERE status IN ('pending_follow_up', 'scheduled');
 
--- Webhook de WhatsApp: buscar cotización por mensaje recibido
-CREATE INDEX idx_mensajes_waba_id ON mensajes (waba_message_id);
+-- Webhook WhatsApp: recibe un waba_message_id y necesita encontrar la fila rápido
+CREATE INDEX idx_waba_messages_external_id
+  ON whatsapp_messages (waba_message_id)
+  WHERE waba_message_id IS NOT NULL;
 
--- Opt-out check antes de enviar
-CREATE INDEX idx_prospectos_telefono_optout
-  ON prospectos (productor_id, telefono, opt_out);
+-- Webhook WhatsApp: recibe un número de teléfono y necesita encontrar el prospecto
+CREATE INDEX idx_prospects_phone
+  ON prospects (producer_id, phone)
+  WHERE opt_out = false;
+
+-- Dashboard: derivaciones pendientes del producer
+CREATE INDEX idx_human_handoffs_pending
+  ON human_handoffs (producer_id, status, created_at)
+  WHERE status = 'pending';
+
+-- Audit trail: historial cronológico de una cotización
+CREATE INDEX idx_quote_events_quote
+  ON quote_events (quote_id, created_at);
+
+-- Clasificaciones IA: buscar la última clasificación de un mensaje
+CREATE INDEX idx_ai_classifications_message
+  ON ai_classifications (message_id, created_at);
 ```
 
 ---
 
-## Datos que el sistema NUNCA almacena
+## Lo que el sistema NUNCA almacena
 
-- La clave privada o token de la WhatsApp Business API (solo referencias a vault).
-- Tokens de sesión de usuario (manejar en capa de autenticación, no en tablas de negocio).
-- Contraseñas en texto plano.
-- Grabaciones de llamadas (el MVP no tiene canal de voz).
-- Datos de la póliza emitida (eso vive en el sistema del productor o la aseguradora).
+| Dato | Por qué no |
+|---|---|
+| API key de WhatsApp (real) | Solo se almacena `waba_config_ref` — una referencia al vault |
+| Tokens de sesión de Supabase Auth | Los maneja Supabase internamente |
+| Contraseñas en ninguna forma | Auth delegado a Supabase |
+| Datos de la póliza emitida | No es dominio de SeguroFlow AI; vive en el sistema del producer |
+| Grabaciones de audio o voz | El MVP no tiene canal de voz |
+| Números de documento sin justificación | Solo si el producer ya lo tiene y es estrictamente necesario |
+| Historial de otros producers | RLS lo impide; cada tenant solo ve sus datos |
 
 ---
 
-## Consideraciones para versión futura (on-premise / private cloud)
+## Consideraciones para versión on-premise / private cloud
 
-El modelo de datos está diseñado para ser exportable a PostgreSQL en cualquier
-infraestructura. Puntos a tener en cuenta para on-premise:
-- Cifrado en reposo de columnas PII (`nombre`, `telefono`, `email`) usando
-  `pgcrypto` o cifrado a nivel de aplicación.
-- Separación de la tabla `prospectos` en esquema aislado con RLS (Row Level Security)
-  si múltiples productores comparten una instancia.
-- Backup y retención de `mensajes` y `eventos_cotizacion` según política de la empresa.
+El modelo es portátil a cualquier instancia PostgreSQL. Puntos a revisar:
+
+- **Cifrado de columnas PII** (`full_name`, `phone`, `email` en prospects):
+  usar `pgcrypto` para cifrado a nivel de columna, o cifrado a nivel de aplicación
+  antes de insertar, dependiendo del modelo de amenazas del cliente.
+- **Supabase self-hosted:** el proyecto usa Supabase OSS, que incluye Auth y
+  el motor de RLS. El mismo esquema funciona sin cambios.
+- **Secrets management:** en SaaS, `waba_config_ref` apunta a Supabase Vault o
+  variables de entorno. En on-premise, puede apuntar a HashiCorp Vault, AWS SSM,
+  o variables del servidor. La columna solo cambia su valor; el código de
+  aplicación que la resuelve usa el proveedor configurado.
+- **Retención de datos:** la política de cuánto tiempo viven `whatsapp_messages`
+  y `quote_events` es una decisión pendiente. Definir antes de poner datos reales
+  en producción (ver CURRENT_STATE.md — decisiones pendientes).
+
+---
+
+## Próximo paso
+
+Este documento está completo y alineado con DECISION-002 y DECISION-003.
+
+**Lo que habilita:**
+- Escribir la primera migración de Supabase en `/supabase/migrations/`.
+- La migración debe incluir, en orden:
+  1. Extensión `pgcrypto` y `uuid-ossp` (o usar `gen_random_uuid()` nativo de PG 14+).
+  2. Tablas de identidad: `profiles`, `producers`, `producer_members`.
+  3. Trigger de creación automática de `profiles` al registrar un usuario.
+  4. Función `get_my_producer_ids()` con `SECURITY DEFINER` y `search_path` seguro.
+  5. Tablas de negocio: `prospects`, `quotes`, `whatsapp_messages`,
+     `ai_classifications`, `human_handoffs`, `quote_events`, `approved_responses`.
+  6. Políticas RLS para cada tabla.
+  7. Trigger de opt-out en `whatsapp_messages`.
+  8. Índices.
+- Habilitar RLS con `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` en todas las tablas.
