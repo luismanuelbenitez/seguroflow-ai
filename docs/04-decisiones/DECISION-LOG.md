@@ -51,4 +51,32 @@ un punto de referencia claro sobre cómo debe ser el código.
 
 ---
 
-*Próximas decisiones pendientes: stack tecnológico, proveedor WhatsApp API, LLM.*
+## [DECISION-002] Stack tecnológico inicial del MVP-01
+
+- **Fecha:** 2026-06-28
+- **Estado:** Aceptada
+- **Documento completo:** [DECISION-002-stack-tecnologico-inicial.md](DECISION-002-stack-tecnologico-inicial.md)
+
+### Decisión tomada
+
+| Capa | Tecnología |
+|---|---|
+| Framework | Next.js 14+ (App Router) + TypeScript |
+| Base de datos | Supabase (PostgreSQL) con RLS desde la primera migración |
+| Auth | Supabase Auth (magic link para el piloto) |
+| WhatsApp (dev) | Twilio sandbox |
+| WhatsApp (piloto real) | 360dialog o Meta Cloud API directa (a confirmar) |
+| LLM generación | Claude claude-sonnet-4-6 (Anthropic) via capa de abstracción |
+| LLM clasificación | Claude claude-haiku-4-5 (Anthropic) via capa de abstracción |
+| Hosting | Vercel (SaaS) + Dockerfile disponible para on-premise |
+
+### Consecuencias
+
+- Se puede iniciar el repositorio y la configuración del entorno.
+- Se puede crear la cuenta de Supabase y escribir las primeras migraciones.
+- Se puede conectar Twilio sandbox para desarrollo de WhatsApp.
+- **Pendiente antes del piloto real:** aprobación de número WABA y templates HSM con Meta.
+
+---
+
+*Próximas decisiones pendientes: proveedor WABA definitivo (DECISION-003), número WABA del piloto, retención de datos.*

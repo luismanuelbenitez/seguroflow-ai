@@ -53,7 +53,8 @@
 ### `/docs/04-decisiones/` — Decisiones técnicas
 | Archivo | Contenido | Estado |
 |---|---|---|
-| `DECISION-LOG.md` | DECISION-001: inicio del proyecto con documentación antes de código | 1 entrada |
+| `DECISION-LOG.md` | DECISION-001 y DECISION-002 registradas | 2 entradas |
+| `DECISION-002-stack-tecnologico-inicial.md` | Análisis completo del stack: framework, DB, auth, WhatsApp, LLM, arquitectura, seguridad | Completo |
 
 ---
 
@@ -62,9 +63,12 @@
 | # | Decisión | Fecha |
 |---|---|---|
 | 001 | Arrancar con documentación completa antes de cualquier línea de código | 2026-06-28 |
+| 002 | Stack: Next.js + TypeScript + Supabase + Claude + Twilio sandbox + Vercel + Docker | 2026-06-28 |
 | — | MVP es el Recuperador de Cotizaciones por WhatsApp, no una suite completa | 2026-06-28 |
 | — | La IA asiste y escala; no emite, no promete cobertura, no interpreta pólizas | 2026-06-28 |
-| — | Modelo de datos en PostgreSQL (Supabase como opción preferida pero no cerrada) | 2026-06-28 |
+| — | Capa de abstracción LLM obligatoria: el código de negocio no llama a Anthropic directamente | 2026-06-28 |
+| — | RLS activo desde la primera migración de base de datos | 2026-06-28 |
+| — | Docker-friendly desde el inicio (aunque el deploy sea en Vercel) | 2026-06-28 |
 | — | Mercado inicial: Uruguay. Diseño pensado para escalar a la región | 2026-06-28 |
 | — | Máximo 2 mensajes automáticos por cotización sin intervención humana | 2026-06-28 |
 | — | Piloto con 1–3 productores en modo gratuito + feedback estructurado | 2026-06-28 |
@@ -75,10 +79,9 @@
 
 | Decisión | Opciones en juego | Bloqueante para |
 |---|---|---|
-| Stack tecnológico completo | Next.js + Supabase (probable) vs. alternativas | Inicio de programación |
-| Proveedor de WhatsApp Business API | Twilio / 360dialog / Infobip / Meta directa | Envío de mensajes |
-| LLM para generación y clasificación | Claude (preferencia) vs. alternativas | Generación de mensajes |
-| Número WABA en piloto | ¿Número propio del productor o número central compartido? | Onboarding del piloto |
+| Proveedor WABA definitivo para piloto real | 360dialog vs. Meta Cloud API directa | Mensajes a prospectos reales |
+| Número WABA del piloto | ¿Número del productor o número central del sistema? | Onboarding del piloto |
+| Retención de datos | ¿Cuánto tiempo se guardan mensajes y eventos? | Poner datos reales en producción |
 | Máximo de mensajes por cotización | El MVP dice 2; ¿es suficiente? | Validar en discovery |
 | Modo de carga de cotizaciones | CSV / formulario web / ambos | UI del productor |
 | Precio y modelo de cobro | SaaS fijo / por cotización / por éxito | Post-piloto |
@@ -87,8 +90,8 @@
 
 ## Qué NO se debe hacer todavía
 
-- **No escribir código.** La decisión de stack no está cerrada.
-- **No crear infraestructura** (base de datos, servidores, cuentas de servicios) antes de decidir el stack.
+- **No escribir código todavía.** El stack está decidido pero no se ha configurado el entorno.
+- **No crear infraestructura productiva** hasta tener los templates HSM aprobados por Meta.
 - **No contactar prospectos reales** con mensajes de prueba.
 - **No comprometerse con productores** en fechas de entrega sin tener el stack definido.
 - **No agregar módulos nuevos** (renovaciones, cross-sell, app móvil) hasta tener el MVP-01 funcionando y validado.
@@ -99,12 +102,14 @@
 ## Próximos pasos ordenados
 
 ```
-1. Entrevistar 3–5 productores → DISCOVERY_QUESTIONS.md
-2. Cerrar stack tecnológico → DECISION-LOG.md DECISION-002
-3. Seleccionar proveedor WABA → DECISION-LOG.md DECISION-003
-4. Crear cuenta sandbox de WhatsApp Business
-5. Diseñar y registrar templates HSM con Meta (1–7 días hábiles de aprobación)
-6. Iniciar programación siguiendo CODING_RULES.md
+✅ 1. Documentación funcional completa (DECISION-001)
+✅ 2. Stack tecnológico definido (DECISION-002)
+   3. Entrevistar 3–5 productores → DISCOVERY_QUESTIONS.md
+   4. Crear cuentas: Supabase, Anthropic API, Twilio sandbox
+   5. Diseñar y enviar templates HSM a Meta (1–7 días hábiles de aprobación)
+   6. Configurar repositorio: Next.js + TypeScript + Supabase + Dockerfile
+   7. Escribir primeras migraciones de base de datos con RLS
+   8. Iniciar programación siguiendo CODING_RULES.md
 ```
 
 ---
