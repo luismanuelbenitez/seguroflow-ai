@@ -1,353 +1,145 @@
-# DATA_MODEL.md — Modelo de Datos MVP
+# MVP-01 — Recuperador Automático de Cotizaciones No Cerradas
 
-## Proyecto
-
-**SeguroFlow AI**
-
-## Módulo
-
-**MVP-01 — Recuperador de Cotizaciones por WhatsApp**
+> **Versión:** 1.1 — 2026-06-28
+> **Estado:** Definición funcional completa. Sin código todavía.
+> **Mercado:** Uruguay (diseñado para escalar a la región).
 
 ---
 
-## Objetivo del documento
+## Qué es
 
-Definir el modelo de datos mínimo necesario para implementar el MVP del Recuperador de Cotizaciones.
+El primer módulo de SeguroFlow AI. Detecta cotizaciones de seguro que no
+recibieron respuesta del prospecto, genera un mensaje de seguimiento personalizado
+y lo envía por WhatsApp Business en nombre del productor.
 
-Este documento no contiene SQL definitivo. Su objetivo es dejar claro qué entidades existen, qué datos se guardan, cómo se relacionan y qué estados deben manejarse antes de comenzar la implementación técnica.
-
----
-
-## Principios del modelo de datos
-
-* Guardar solo los datos necesarios para el seguimiento comercial.
-* Mantener trazabilidad completa de mensajes, respuestas y cambios de estado.
-* Diseñar desde el inicio pensando en multi-productor, aunque el piloto sea con 1–3 productores.
-* Separar prospectos, cotizaciones, mensajes, eventos y clasificaciones de IA.
-* No guardar datos sensibles innecesarios.
-* Permitir auditoría básica.
-* Preparar el sistema para futura versión SaaS, private cloud u on-premise.
+El objetivo es recuperar cotizaciones que hoy se pierden simplemente porque el
+productor no tiene tiempo de hacer seguimiento manual.
 
 ---
 
-## Entidades principales
+## Problema que resuelve
 
-### 1. Producers
+Los productores de seguros generan cotizaciones todos los días. Entre el 50 y 70%
+no se convierten en póliza. El motivo principal no es el precio ni la competencia:
+es que el prospecto "se enfría" y nadie lo contactó en el momento justo.
 
-Representa al productor, broker o corredora que usa SeguroFlow AI.
-
-Campos sugeridos:
-
-| Campo                    | Tipo      | Descripción                              |
-| ------------------------ | --------- | ---------------------------------------- |
-| id                       | uuid      | Identificador único                      |
-| name                     | text      | Nombre comercial del productor o broker  |
-| contact_name             | text      | Persona responsable                      |
-| email                    | text      | Email de contacto                        |
-| phone                    | text      | Teléfono de contacto                     |
-| whatsapp_business_number | text      | Número autorizado para envíos, si aplica |
-| status                   | text      | active / inactive / pilot                |
-| created_at               | timestamp | Fecha de creación                        |
-| updated_at               | timestamp | Última actualización                     |
+El productor no tiene capacidad operativa de hacer seguimiento a todas sus
+cotizaciones. SeguroFlow AI hace ese trabajo por él.
 
 ---
 
-### 2. Prospects
+## Actores del sistema
 
-Representa a la persona o empresa que recibió una cotización.
-
-Campos sugeridos:
-
-| Campo           | Tipo      | Descripción                                   |
-| --------------- | --------- | --------------------------------------------- |
-| id              | uuid      | Identificador único                           |
-| producer_id     | uuid      | Productor asociado                            |
-| full_name       | text      | Nombre del prospecto                          |
-| phone           | text      | Teléfono WhatsApp                             |
-| email           | text      | Email opcional                                |
-| document_number | text      | Documento opcional, evitar si no es necesario |
-| consent_status  | text      | unknown / granted / revoked                   |
-| opt_out         | boolean   | Indica si pidió baja                          |
-| created_at      | timestamp | Fecha de creación                             |
-| updated_at      | timestamp | Última actualización                          |
-
-Notas:
-
-* En MVP, el teléfono es obligatorio.
-* El documento de identidad no debería pedirse salvo que el productor ya lo tenga y sea necesario.
-* Si el prospecto pide baja, no se le debe volver a contactar.
+| Actor | Rol |
+|---|---|
+| **Productor** | Carga cotizaciones, configura el sistema, recibe notificaciones, cierra ventas. |
+| **Prospecto** | Recibe mensajes de seguimiento, responde, es derivado al productor si hay interés. |
+| **Sistema (IA)** | Detecta oportunidades, genera mensajes, los envía, clasifica respuestas, escala cuando corresponde. |
 
 ---
 
-### 3. Quotes
+## Flujo resumido
 
-Representa una cotización no cerrada.
-
-Campos sugeridos:
-
-| Campo                | Tipo      | Descripción                           |
-| -------------------- | --------- | ------------------------------------- |
-| id                   | uuid      | Identificador único                   |
-| producer_id          | uuid      | Productor asociado                    |
-| prospect_id          | uuid      | Prospecto asociado                    |
-| insurance_type       | text      | auto / hogar / vida / comercio / otro |
-| insurer_name         | text      | Aseguradora cotizada, opcional        |
-| quote_reference      | text      | Número o referencia de cotización     |
-| quoted_amount        | numeric   | Prima o costo cotizado, opcional      |
-| currency             | text      | UYU / USD                             |
-| quote_date           | timestamp | Fecha de emisión de cotización        |
-| follow_up_start_at   | timestamp | Fecha en que debe iniciar seguimiento |
-| status               | text      | Estado comercial de la cotización     |
-| assigned_seller_name | text      | Vendedor/productor asignado           |
-| notes                | text      | Notas internas                        |
-| created_at           | timestamp | Fecha de creación                     |
-| updated_at           | timestamp | Última actualización                  |
-
-Estados sugeridos para `status`:
-
-```text
-pending_follow_up
-scheduled
-contacted
-responded
-interested
-needs_more_info
-human_handoff
-closed_won
-closed_lost
-no_response
-opt_out
-cancelled
-error
+```
+1. El productor carga una cotización al sistema (CSV o formulario).
+2. El sistema espera el umbral configurado (default: 48 horas).
+3. Si no hay cierre manual en ese tiempo, activa el seguimiento.
+4. Genera un mensaje personalizado con los datos de la cotización.
+5. Lo envía por WhatsApp Business en nombre del productor.
+6. Si el prospecto responde:
+   · Interés → notifica al productor.
+   · Pregunta aprobada → responde y notifica.
+   · Declinación → cierra la cotización y notifica.
+   · Cualquier otra cosa → escala al productor de inmediato.
+7. Si no hay respuesta en 24h → envía un segundo mensaje (si está configurado).
+8. Si no hay respuesta tras ambos intentos → estado AGOTADO → notifica al productor.
 ```
 
 ---
 
-### 4. WhatsApp Messages
+## Alcance del MVP — Lo que SÍ incluye
 
-Representa cada mensaje enviado o recibido por WhatsApp.
+- Carga de cotizaciones vía CSV o formulario web simple.
+- Detección automática de cotizaciones vencidas sin cierre.
+- Generación de mensaje personalizado por IA (tipo de seguro, nombre, monto).
+- Envío por WhatsApp Business API con soporte de plantillas HSM.
+- Clasificación automática de respuestas del prospecto.
+- Escalamiento al productor con contexto completo cuando aplica.
+- Notificación al productor (WhatsApp y/o email) ante respuestas relevantes.
+- Registro de estado de cada cotización con historial de eventos.
+- Dashboard web básico: lista de cotizaciones con estado y acciones.
+- Resumen diario automático al productor.
 
-Campos sugeridos:
+## Alcance del MVP — Lo que NO incluye
 
-| Campo               | Tipo      | Descripción                          |
-| ------------------- | --------- | ------------------------------------ |
-| id                  | uuid      | Identificador único                  |
-| quote_id            | uuid      | Cotización asociada                  |
-| prospect_id         | uuid      | Prospecto asociado                   |
-| producer_id         | uuid      | Productor asociado                   |
-| direction           | text      | outbound / inbound                   |
-| message_body        | text      | Contenido del mensaje                |
-| template_name       | text      | Nombre de plantilla usada, si aplica |
-| whatsapp_message_id | text      | ID externo del proveedor             |
-| status              | text      | Estado técnico del mensaje           |
-| sent_at             | timestamp | Fecha de envío                       |
-| delivered_at        | timestamp | Fecha de entrega                     |
-| read_at             | timestamp | Fecha de lectura, si está disponible |
-| failed_at           | timestamp | Fecha de error                       |
-| failure_reason      | text      | Motivo del error                     |
-| created_at          | timestamp | Fecha de creación                    |
+- Integración automática con sistemas de cotización del productor.
+- Agente conversacional completo (el MVP solo hace el primer seguimiento).
+- App móvil.
+- Multi-usuario por cuenta (el piloto es un productor por cuenta).
+- Onboarding self-service (el piloto requiere configuración asistida).
 
-Estados sugeridos para `status`:
+---
 
-```text
-pending
-sent
-delivered
-read_if_available
-responded
-failed
+## Límites duros de la IA (no negociables)
+
+La IA del MVP puede enviar mensajes de seguimiento, responder preguntas
+aprobadas por el productor y escalar conversaciones. Nunca puede:
+
+- Confirmar emisión de póliza.
+- Prometer o detallar coberturas específicas.
+- Negociar precio o condiciones.
+- Interpretar cláusulas de póliza.
+- Aceptar o rechazar un riesgo.
+- Comprometer fechas de vigencia.
+- Mentir sobre ser un sistema automatizado cuando el prospecto lo pregunta.
+
+Si algo no calza en el guión aprobado → escala al productor siempre.
+
+---
+
+## Estados posibles de una cotización
+
+```
+NUEVA → EN_SEGUIMIENTO → CONTACTADA → RESPONDIO → INTERESADO → CERRADA_GANADA
+                      ↘ SIN_RESPUESTA_1 → CONTACTADA_2 → AGOTADO
+                                        ↘ RESPONDIO → CERRADA_PERDIDA
+                                                    ↘ REQUIERE_ATENCION_HUMANA
 ```
 
----
-
-### 5. AI Classifications
-
-Representa la clasificación que hace la IA sobre una respuesta del prospecto.
-
-Campos sugeridos:
-
-| Campo                 | Tipo      | Descripción                     |
-| --------------------- | --------- | ------------------------------- |
-| id                    | uuid      | Identificador único             |
-| quote_id              | uuid      | Cotización asociada             |
-| message_id            | uuid      | Mensaje entrante analizado      |
-| classification        | text      | Resultado de clasificación      |
-| confidence            | numeric   | Confianza estimada              |
-| summary               | text      | Resumen breve para el productor |
-| suggested_next_action | text      | Acción sugerida                 |
-| requires_human        | boolean   | Si debe intervenir una persona  |
-| created_at            | timestamp | Fecha de creación               |
-
-Clasificaciones sugeridas:
-
-```text
-interested
-needs_more_info
-price_objection
-coverage_objection
-wants_human_contact
-not_interested
-opt_out_requested
-unclear_response
-angry_or_sensitive
-```
-
-Regla:
-La IA clasifica y resume. No decide emisión, cobertura, aceptación ni condiciones comerciales.
+Estados terminales: `CERRADA_GANADA`, `CERRADA_PERDIDA`, `DESCARTADA`.
+El productor puede pausar o descartar una cotización en cualquier momento.
 
 ---
 
-### 6. Human Handoffs
+## Datos mínimos para operar
 
-Representa una derivación al productor o vendedor.
+Por cotización: nombre del prospecto, teléfono (E.164), tipo de seguro,
+fecha de cotización.
 
-Campos sugeridos:
-
-| Campo       | Tipo      | Descripción                   |
-| ----------- | --------- | ----------------------------- |
-| id          | uuid      | Identificador único           |
-| quote_id    | uuid      | Cotización asociada           |
-| producer_id | uuid      | Productor asociado            |
-| prospect_id | uuid      | Prospecto asociado            |
-| reason      | text      | Motivo de derivación          |
-| summary     | text      | Resumen para el humano        |
-| status      | text      | pending / accepted / resolved |
-| assigned_to | text      | Persona asignada              |
-| created_at  | timestamp | Fecha de creación             |
-| resolved_at | timestamp | Fecha de resolución           |
-
-Motivos comunes:
-
-```text
-prospect_interested
-prospect_has_question
-price_objection
-coverage_objection
-human_requested
-sensitive_case
-unclear_response
-```
+Por productor: nombre para mensajes, número de WhatsApp Business, umbral de
+espera en horas, modo de envío (manual o automático), firma de mensajes.
 
 ---
 
-### 7. Quote Events
+## Métricas de éxito del MVP
 
-Representa el historial de eventos de una cotización.
-
-Campos sugeridos:
-
-| Campo       | Tipo      | Descripción         |
-| ----------- | --------- | ------------------- |
-| id          | uuid      | Identificador único |
-| quote_id    | uuid      | Cotización asociada |
-| event_type  | text      | Tipo de evento      |
-| description | text      | Descripción breve   |
-| metadata    | jsonb     | Datos adicionales   |
-| created_at  | timestamp | Fecha del evento    |
-
-Eventos sugeridos:
-
-```text
-quote_created
-follow_up_scheduled
-message_sent
-message_delivered
-message_read
-message_failed
-prospect_replied
-ai_classified_response
-human_handoff_created
-status_changed
-quote_closed_won
-quote_closed_lost
-opt_out_requested
-```
+| Métrica | Objetivo mínimo |
+|---|---|
+| Tasa de respuesta de prospectos contactados | >15% |
+| Tasa de conversión (cotizaciones a pólizas) | >5% |
+| Tasa de opt-out | <3% |
+| NPS del productor piloto tras 30 días | ≥8 |
+| Cero incidentes de compromisos no autorizados | 0 |
 
 ---
 
-## Relaciones principales
+## Documentación de referencia
 
-```text
-Producer
-  └── Prospects
-  └── Quotes
-        └── WhatsApp Messages
-        └── AI Classifications
-        └── Human Handoffs
-        └── Quote Events
-```
-
-Reglas:
-
-* Un productor puede tener muchos prospectos.
-* Un prospecto puede tener muchas cotizaciones.
-* Una cotización pertenece a un prospecto y a un productor.
-* Una cotización puede tener muchos mensajes.
-* Una cotización puede tener muchas clasificaciones de IA.
-* Una cotización puede generar una o más derivaciones humanas.
-* Todo cambio importante debe quedar registrado como evento.
-
----
-
-## Datos mínimos para cargar una cotización
-
-Para el piloto, una cotización puede cargarse con:
-
-```text
-producer_id
-prospect_full_name
-prospect_phone
-insurance_type
-quote_date
-quoted_amount opcional
-currency opcional
-assigned_seller_name opcional
-notes opcional
-```
-
-No se debe exigir más información que la necesaria para iniciar seguimiento.
-
----
-
-## Consideraciones de privacidad
-
-* No almacenar datos sensibles si no son necesarios.
-* Registrar si el prospecto pidió baja.
-* No contactar prospectos con `opt_out = true`.
-* Mantener trazabilidad de mensajes y eventos.
-* Permitir auditoría posterior de qué se envió, cuándo y por qué.
-* No usar datos del productor o prospecto para entrenamiento de modelos.
-
----
-
-## Decisiones tomadas
-
-* El MVP usará una base estructurada, preferentemente Supabase/PostgreSQL.
-* Google Sheets puede servir solo para demo interna sin datos reales.
-* El sistema debe guardar mensajes, estados y eventos.
-* La IA será asistiva y no decisoria.
-* El modelo debe permitir piloto pequeño, pero no bloquear evolución multi-productor.
-
----
-
-## Preguntas abiertas
-
-* ¿El productor cargará cotizaciones por CSV, formulario o ambas?
-* ¿Qué proveedor de WhatsApp se usará inicialmente?
-* ¿Cada productor usará su propio número autorizado o se usará un número central durante el piloto?
-* ¿Qué datos mínimos reales suelen tener disponibles los productores?
-* ¿Cómo se validará que una cotización fue efectivamente recuperada?
-* ¿El cierre de venta se cargará manualmente o se inferirá por estado?
-* ¿Qué reportes mínimos necesita ver el productor en el dashboard?
-
----
-
-## Próximo paso
-
-Convertir este modelo conceptual en:
-
-1. Esquema inicial de tablas.
-2. Definición de enums.
-3. Reglas de seguridad por productor.
-4. Flujo de carga CSV/formulario.
-5. Dashboard mínimo de cotizaciones.
+| Documento | Contenido |
+|---|---|
+| [RECUPERADOR_COTIZACIONES.md](../02-product/RECUPERADOR_COTIZACIONES.md) | Especificación funcional detallada: flujo completo, estados, riesgos, decisiones. |
+| [USER_FLOWS.md](../02-product/USER_FLOWS.md) | Flujos de usuario paso a paso para todos los actores. |
+| [MESSAGE_SEQUENCES.md](../02-product/MESSAGE_SEQUENCES.md) | Textos de mensajes, variantes y respuestas automáticas. |
+| [DATA_MODEL.md](../05-architecture/DATA_MODEL.md) | Modelo de datos: tablas, campos, estados y relaciones. |
+| [PILOT_PLAN.md](../07-go-to-market/PILOT_PLAN.md) | Plan del piloto con productores reales: métricas, onboarding, contingencias. |
+| [DISCOVERY_QUESTIONS.md](../07-go-to-market/DISCOVERY_QUESTIONS.md) | Preguntas para entrevistar productores antes de programar. |
