@@ -259,7 +259,7 @@ Esto es correcto e intencional. El service role se usa exclusivamente para:
 **Cuidados de seguridad obligatorios para procesos con service role:**
 1. Verificar la firma HMAC del webhook antes de procesar cualquier dato.
 2. Nunca exponer la service role key al cliente (Next.js server-side only).
-3. Loguear todas las operaciones del service role con `actor = 'SISTEMA'` en `quote_events`.
+3. Loguear todas las operaciones del service role con `actor = 'system'` en `quote_events`.
 4. Tratar el service role key con la misma reserva que una contraseña de producción.
 
 ---

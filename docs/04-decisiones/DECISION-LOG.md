@@ -105,14 +105,14 @@ deliberada para rendimiento de RLS y trazabilidad de auditoría).
 El opt-out del prospecto se refuerza con un trigger en `whatsapp_messages`.
 
 Los procesos de sistema (webhook, cron) usan service role y deben registrar
-`actor = 'SISTEMA'` en `quote_events`.
+`actor = 'system'` en `quote_events`.
 
 Nomenclatura de tablas: **inglés** en `snake_case`.
 
 ### Consecuencias
 
 - Se puede escribir la primera migración de Supabase.
-- DATA_MODEL.md debe actualizarse con nombres en inglés y modelo de tres tablas.
+- DATA_MODEL.md fue actualizado a v2.0 y quedó alineado con DECISION-003: inglés snake_case, producer_id como tenant, modelo profiles/producers/producer_members y RLS desde la primera migración.
 - El proceso de alta de un productor nuevo queda pendiente de definir.
 
 ---

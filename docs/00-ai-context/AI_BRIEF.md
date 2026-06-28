@@ -113,7 +113,7 @@ Ver detalle completo en DECISION-002 y DECISION-003.
 ```
 docs/00-ai-context/CODING_RULES.md        ← reglas de codificación obligatorias
 docs/00-ai-context/CURRENT_STATE.md       ← estado exacto del proyecto hoy
-docs/02-mvp/MVP-01-recuperador.md         ← spec del módulo a programar
+docs/02-mvp/MVP-01-recuperador-cotizaciones.md ← spec del módulo a programar
 docs/02-product/RECUPERADOR_COTIZACIONES.md ← flujo completo y riesgos
 docs/02-product/USER_FLOWS.md             ← flujos de usuario detallados
 docs/02-product/MESSAGE_SEQUENCES.md      ← textos y variantes de mensajes
