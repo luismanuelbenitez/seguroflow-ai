@@ -8,8 +8,8 @@
 
 ## Estado general
 
-**Fase:** Definición funcional y arquitectura. Pre-código.
-**Progreso:** La documentación del MVP-01 está completa. Nada está programado todavía.
+**Fase:** Arquitectura definida. Primera migración generada. Pre-aplicación.
+**Progreso:** Documentación completa. Primera migración de Supabase generada (no aplicada remotamente aún).
 
 ---
 
@@ -95,7 +95,8 @@
 
 ## Qué NO se debe hacer todavía
 
-- **No escribir código de aplicación todavía.** El siguiente paso técnico es la primera migración de Supabase.
+- **No ejecutar la migración contra producción** sin haberla validado en local. Ver checklist en `supabase/README.md`.
+- **No escribir código de aplicación todavía.** El siguiente paso técnico es validar la migración en entorno local.
 - **No crear infraestructura productiva** hasta tener los templates HSM aprobados por Meta.
 - **No contactar prospectos reales** con mensajes de prueba.
 - **No comprometerse con productores** en fechas de entrega sin tener la primera migración de Supabase validada.
@@ -111,12 +112,13 @@
 ✅ 2. Stack tecnológico definido (DECISION-002)
 ✅ 3. Modelo multi-tenant y RLS definido (DECISION-003)
 ✅ 4. DATA_MODEL.md actualizado: inglés, 11 tablas, producer_id, enums, índices
-   5. Entrevistar 3–5 productores → DISCOVERY_QUESTIONS.md
-   6. Crear cuentas: Supabase, Anthropic API, Twilio sandbox
-   7. Diseñar y enviar templates HSM a Meta (1–7 días hábiles de aprobación)
-   8. Configurar repositorio: Next.js + TypeScript + Supabase + Dockerfile
-   9. Escribir primera migración de Supabase (ver sección "Próximo paso" en DATA_MODEL.md)
-  10. Iniciar programación siguiendo CODING_RULES.md
+✅ 5. Primera migración de Supabase generada: supabase/migrations/001_base_multitenant_schema.sql
+   6. Entrevistar 3–5 productores → DISCOVERY_QUESTIONS.md
+   7. Crear cuentas: Supabase, Anthropic API, Twilio sandbox
+   8. Diseñar y enviar templates HSM a Meta (1–7 días hábiles de aprobación)
+   9. Configurar repositorio: Next.js + TypeScript + Supabase + Dockerfile
+  10. Validar migración 001 en entorno local (supabase start + db push)
+  11. Iniciar programación siguiendo CODING_RULES.md
 ```
 
 ---

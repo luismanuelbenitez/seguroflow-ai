@@ -88,8 +88,9 @@ Ver detalle completo en DECISION-002 y DECISION-003.
 
 ## Estado actual del proyecto (2026-06-28)
 
-- Fase de documentación y diseño. Pre-código. Pre-infraestructura.
-- **Sin código. Sin migraciones. Sin cuenta de WhatsApp Business activada.**
+- Fase de arquitectura definida. Primera migración generada. Pre-aplicación.
+- **Sin código de aplicación. Sin infraestructura productiva. Sin cuenta de WhatsApp Business activada.**
+- Primera migración de Supabase generada: `supabase/migrations/001_base_multitenant_schema.sql`. No aplicada remotamente aún.
 - Documentación funcional completa: flujos, estados, mensajes, datos, piloto.
 - Stack técnico decidido: DECISION-002 (Next.js + Supabase + Claude + Twilio + Vercel).
 - Modelo multi-tenant y RLS decidido: DECISION-003 (producers, profiles, producer_members).
@@ -104,7 +105,7 @@ Ver detalle completo en DECISION-002 y DECISION-003.
 2. Crear cuentas: Supabase, Anthropic API, Twilio sandbox.
 3. Diseñar y enviar templates HSM a Meta (aprobación tarda 1–7 días hábiles).
 4. Configurar repositorio Next.js + Supabase + Dockerfile.
-5. Escribir primera migración de Supabase (orden en DATA_MODEL.md §Próximo paso).
+5. Validar migración 001 en entorno local (`supabase start` + `supabase db push`). Ver `supabase/README.md`.
 
 ---
 
