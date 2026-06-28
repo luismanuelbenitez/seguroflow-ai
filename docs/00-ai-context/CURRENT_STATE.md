@@ -72,7 +72,7 @@
 | — | RLS via función get_my_producer_ids(). Todas las tablas de negocio llevan producer_id | 2026-06-28 |
 | — | quote_events es append-only: sin UPDATE ni DELETE | 2026-06-28 |
 | — | Opt-out reforzado con trigger en whatsapp_messages (doble barrera) | 2026-06-28 |
-| — | Tablas en inglés snake_case (DATA_MODEL.md pendiente de actualizar) | 2026-06-28 |
+| — | Tablas en inglés snake_case. DATA_MODEL.md v2.0 actualizado y alineado con DECISION-003 | 2026-06-28 |
 | — | Docker-friendly desde el inicio (aunque el deploy sea en Vercel) | 2026-06-28 |
 | — | Mercado inicial: Uruguay. Diseño pensado para escalar a la región | 2026-06-28 |
 | — | Máximo 2 mensajes automáticos por cotización sin intervención humana | 2026-06-28 |
@@ -98,9 +98,9 @@
 - **No escribir código de aplicación todavía.** El siguiente paso técnico es la primera migración de Supabase.
 - **No crear infraestructura productiva** hasta tener los templates HSM aprobados por Meta.
 - **No contactar prospectos reales** con mensajes de prueba.
-- **No comprometerse con productores** en fechas de entrega sin tener el stack definido.
+- **No comprometerse con productores** en fechas de entrega sin tener la primera migración de Supabase validada.
 - **No agregar módulos nuevos** (renovaciones, cross-sell, app móvil) hasta tener el MVP-01 funcionando y validado.
-- **No tomar decisiones de stack** sin registrarlas en DECISION-LOG.md.
+- **No tomar nuevas decisiones de arquitectura** sin registrarlas en DECISION-LOG.md.
 
 ---
 

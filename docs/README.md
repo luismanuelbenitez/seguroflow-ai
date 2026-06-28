@@ -49,8 +49,8 @@ Documentación profunda de cada módulo. Leer cuando se va a programar.
 
 ## `/03-arquitectura/` — Arquitectura (vacío)
 
-Reservado para diagramas de arquitectura, decisiones de infraestructura,
-ADRs técnicos y runbooks. Se completa cuando el stack esté definido.
+Reservado para diagramas de arquitectura, runbooks y ADRs adicionales.
+El stack ya está definido (DECISION-002). El modelo de datos está en `/05-architecture/`.
 
 ---
 
@@ -58,7 +58,9 @@ ADRs técnicos y runbooks. Se completa cuando el stack esté definido.
 
 | Archivo | Para qué sirve |
 |---|---|
-| [DECISION-LOG.md](04-decisiones/DECISION-LOG.md) | Registro cronológico de todas las decisiones importantes con contexto y alternativas. |
+| [DECISION-LOG.md](04-decisiones/DECISION-LOG.md) | Índice de todas las decisiones con resumen. Leer antes de asumir cualquier cosa técnica. |
+| [DECISION-002-stack-tecnologico-inicial.md](04-decisiones/DECISION-002-stack-tecnologico-inicial.md) | Stack decidido: Next.js, Supabase, Claude, Twilio, Vercel, Docker. Análisis de alternativas. |
+| [DECISION-003-multitenant-rls.md](04-decisiones/DECISION-003-multitenant-rls.md) | Modelo multi-tenant: profiles/producers/producer_members, función get_my_producer_ids(), RLS, opt-out. |
 
 ---
 

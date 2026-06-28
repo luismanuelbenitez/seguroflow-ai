@@ -68,37 +68,43 @@ Ante cualquier duda → el sistema escala al productor.
 
 ---
 
-## Arquitectura esperada (hipótesis, no confirmada)
+## Arquitectura — decidida por DECISION-002 y DECISION-003
 
-| Capa | Opción probable |
+| Capa | Tecnología elegida |
 |---|---|
-| Frontend / Dashboard | Next.js (App Router) |
-| Base de datos | PostgreSQL via Supabase |
-| WhatsApp Business API | Por confirmar: Twilio / 360dialog / Meta directa |
-| LLM (generación y clasificación) | Claude (Anthropic) — preferencia declarada |
-| Hosting | Supabase + Vercel (SaaS) / Docker (on-premise futuro) |
-| Auth | Supabase Auth |
+| Frontend / Backend | Next.js 14+ (App Router) + TypeScript |
+| Base de datos | Supabase (PostgreSQL) con RLS desde la primera migración |
+| Auth | Supabase Auth (magic link para el piloto) |
+| WhatsApp (desarrollo) | Twilio sandbox |
+| WhatsApp (piloto real) | 360dialog o Meta Cloud API directa — a confirmar |
+| LLM generación | Claude claude-sonnet-4-6 (Anthropic) via capa de abstracción |
+| LLM clasificación | Claude claude-haiku-4-5 (Anthropic) via capa de abstracción |
+| Hosting | Vercel (SaaS) + Dockerfile disponible para on-premise |
+| Modelo multi-tenant | producers ≠ auth.uid(). Tablas: profiles, producers, producer_members |
 
-Stack definitivo no está cerrado — ver DECISION-LOG.md antes de asumir.
+Ver detalle completo en DECISION-002 y DECISION-003.
 
 ---
 
 ## Estado actual del proyecto (2026-06-28)
 
-- Fase de documentación y diseño funcional.
-- **Sin código. Sin infraestructura. Sin cuenta de WhatsApp Business activada.**
+- Fase de documentación y diseño. Pre-código. Pre-infraestructura.
+- **Sin código. Sin migraciones. Sin cuenta de WhatsApp Business activada.**
 - Documentación funcional completa: flujos, estados, mensajes, datos, piloto.
-- Decisión de stack técnico: pendiente.
+- Stack técnico decidido: DECISION-002 (Next.js + Supabase + Claude + Twilio + Vercel).
+- Modelo multi-tenant y RLS decidido: DECISION-003 (producers, profiles, producer_members).
+- DATA_MODEL.md v2.0 alineado: 11 tablas en inglés, producer_id en todas, RLS definido.
 - Entrevistas con productores piloto: pendiente.
 
 ---
 
 ## Próximo paso
 
-Antes de escribir una sola línea de código:
 1. Entrevistar 3–5 productores con DISCOVERY_QUESTIONS.md.
-2. Tomar la decisión de stack y registrarla en DECISION-LOG.md.
-3. Seleccionar proveedor de WhatsApp Business API y crear cuenta sandbox.
+2. Crear cuentas: Supabase, Anthropic API, Twilio sandbox.
+3. Diseñar y enviar templates HSM a Meta (aprobación tarda 1–7 días hábiles).
+4. Configurar repositorio Next.js + Supabase + Dockerfile.
+5. Escribir primera migración de Supabase (orden en DATA_MODEL.md §Próximo paso).
 
 ---
 
