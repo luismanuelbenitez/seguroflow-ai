@@ -12,9 +12,9 @@ Ser una capa de IA operativa/comercial para el mercado asegurador uruguayo y reg
 
 ## Estado
 
-Skeleton tecnico validado. Next.js 15 + TypeScript buildea limpio.
-Migracion 001 validada con supabase db reset local. Tipos generados.
-Proximo paso: implementar Auth (login/logout) y primer modulo MVP-01.
+Auth basico implementado: magic link con Supabase Auth.
+Login → /auth/callback → /dashboard protegido con getUser().
+Proximo paso: dashboard funcional del producer (quotes, prospects).
 
 ---
 
@@ -64,6 +64,47 @@ npx supabase@2.108.0 db reset   # Aplica migraciones localmente (NO a produccion
 # 4. Iniciar servidor de desarrollo
 npm run dev
 ```
+
+## Probar Auth localmente
+
+Requiere Supabase local corriendo (`npx supabase@2.108.0 start`) y Docker Desktop activo.
+
+```bash
+# 1. Obtener las keys del Supabase local
+npx supabase@2.108.0 status
+# → copia "API URL" como NEXT_PUBLIC_SUPABASE_URL
+# → copia "anon key" como NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+
+# 2. Configurar .env.local (no commitear)
+cp .env.example .env.local
+# Completar:
+#   NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+#   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<anon key de supabase status>
+#   NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# 3. Iniciar la app
+npm run dev
+
+# 4. Ir a http://localhost:3000/login e ingresar un email
+
+# 5. Ver el email con el magic link en Inbucket (email local de Supabase)
+#    http://localhost:54324
+
+# 6. Hacer click en el link del email → redirige a /dashboard
+```
+
+**Variables requeridas para Auth:**
+
+| Variable | Descripcion | Local |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase | `http://localhost:54321` |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | anon key (safe para cliente) | ver `supabase status` |
+| `NEXT_PUBLIC_SITE_URL` | URL base de la app (para callback del magic link) | `http://localhost:3000` |
+
+**Nota:** Auth usa el Supabase local (Docker) o el remoto segun `NEXT_PUBLIC_SUPABASE_URL`.
+No aplica migraciones. No ejecuta `supabase db push`.
+
+---
 
 ## Supabase — seguridad de entorno
 

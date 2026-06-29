@@ -1,48 +1,102 @@
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import type { Database } from '@/types/database'
+
 /*
- * INTENCION: Placeholder para el cliente Supabase de lado servidor.
+ * INTENCION: Crear un cliente Supabase para uso exclusivo en el servidor.
+ * Usar en Server Components, Route Handlers y Server Actions de Next.js.
  *
- * PENDIENTE DE IMPLEMENTAR en iteraciones futuras, cuando se construyan:
- * - Server Components que lean datos protegidos del producer.
- * - Route Handlers para el webhook de WhatsApp (POST /api/webhooks/whatsapp).
- * - Server Actions para el formulario de carga de cotizaciones.
- * - Cron job de deteccion de cotizaciones elegibles.
+ * FLUJO:
+ *   1. Obtiene el cookieStore de next/headers (async en Next.js 15+).
+ *   2. Crea el cliente via createServerClient de @supabase/ssr.
+ *   3. Configura los handlers de cookies para que Supabase pueda leer y
+ *      escribir la sesion del usuario entre requests.
+ *   4. El cliente resultante aplica RLS normalmente con la sesion del usuario.
  *
- * REFERENCIA DE IMPLEMENTACION:
- * Usar createServerClient de @supabase/ssr con cookies de next/headers.
- * Ver documentacion oficial: https://supabase.com/docs/guides/auth/server-side/nextjs
+ * ENTRADAS: ninguna (lee el contexto de cookies del request actual)
+ * SALIDAS: {SupabaseClient<Database>} cliente con sesion del usuario activa
  *
- * SEGURIDAD CRITICA:
- * - El cliente de servidor puede autenticarse con dos keys distintas segun el caso:
+ * ERRORES POSIBLES:
+ *   - Si NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+ *     no estan definidas, el cliente lanzara error en tiempo de ejecucion.
+ *     Ver validacion en: (pendiente — agregar startup validation).
  *
- *   1. NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (con sesion de usuario):
- *      Para server components que muestran datos del producer autenticado.
- *      RLS aplica normalmente. El usuario ve solo sus datos.
+ * POR QUE ES SERVER-SIDE (y no browser):
+ *   - Lee cookies HttpOnly que el browser no puede ver directamente.
+ *   - Puede tanto leer COMO escribir cookies (en Route Handlers y Server Actions).
+ *   - Necesario para verificar sesion en rutas protegidas sin exponer el token al JS del cliente.
+ *   - Evita el "flash" de contenido no autenticado que ocurre con validacion solo en cliente.
  *
- *   2. SUPABASE_SERVICE_ROLE_KEY (sin sesion de usuario, bypasea RLS):
- *      Para procesos del sistema: webhook de WhatsApp, cron de deteccion,
- *      jobs de envio de mensajes. NUNCA exponer al cliente.
- *      Todo proceso con service role DEBE registrar actor='system' en quote_events.
+ * POR QUE NO USA SERVICE ROLE KEY:
+ *   - Esta funcion maneja sesiones de usuarios autenticados. RLS DEBE aplicar.
+ *   - El service role bypasea RLS y es para procesos del sistema (webhooks, cron).
+ *   - El service role key vive EXCLUSIVAMENTE en server/*, nunca en rutas de usuario.
+ *   - Ver: docs/04-decisiones/DECISION-003-multitenant-rls.md, Seccion 6.
  *
- * - NUNCA usar SUPABASE_SERVICE_ROLE_KEY en rutas o componentes accesibles
- *   desde el cliente sin autenticacion y verificacion de firma HMAC.
+ * VARIABLES DE ENTORNO REQUERIDAS:
+ *   - NEXT_PUBLIC_SUPABASE_URL: URL del proyecto Supabase (api/kong endpoint).
+ *     Local: http://localhost:54321  |  Produccion: https://xxx.supabase.co
+ *   - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: anon key del proyecto.
+ *     Segura para exponer al cliente. RLS la protege.
+ *     Local: obtener de `npx supabase@2.108.0 status` (campo "anon key").
  *
- * Ver: docs/04-decisiones/DECISION-003-multitenant-rls.md, Secciones 6 y 7.
- * Ver: docs/00-ai-context/CODING_RULES.md
+ * DIFERENCIA CON lib/supabase/client.ts:
+ *   - client.ts: solo browser ('use client'). No accede a cookies HttpOnly.
+ *   - server.ts (este): servidor. Lee cookies HttpOnly. Unico modo seguro
+ *     de verificar sesiones en rutas protegidas.
+ *
+ * USO CORRECTO:
+ *   import { createClient } from '@/lib/supabase/server'
+ *   const supabase = await createClient()
+ *   const { data: { user } } = await supabase.auth.getUser()
+ *
+ * Ver: docs/04-decisiones/DECISION-003-multitenant-rls.md
+ * Ver: https://supabase.com/docs/guides/auth/server-side/nextjs
  */
+export async function createClient() {
+  // En Next.js 15, cookies() es async. Siempre await para evitar el warning
+  // "cookies() should be awaited before using its value" en produccion.
+  const cookieStore = await cookies()
 
-// TODO: Implementar cuando se necesiten los primeros Server Components o Route Handlers.
-// Ejemplo de estructura:
-//
-// import { createServerClient } from '@supabase/ssr'
-// import { cookies } from 'next/headers'
-//
-// export async function createClient() {
-//   const cookieStore = await cookies()
-//   return createServerClient(
-//     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-//     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-//     { cookies: { getAll: () => cookieStore.getAll(), setAll: ... } }
-//   )
-// }
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        /*
+         * getAll: Supabase lee las cookies actuales para reconstruir la sesion del usuario.
+         * Necesario para que auth.getUser() funcione en Server Components protegidos.
+         * Devuelve todas las cookies del request — Supabase filtra las suyas internamente.
+         */
+        getAll() {
+          return cookieStore.getAll()
+        },
 
-export {}
+        /*
+         * setAll: Supabase escribe cookies actualizadas tras login, logout o refresh de token.
+         *
+         * El try/catch maneja el caso de Server Components puros: Next.js no permite
+         * escribir cookies desde un Server Component (solo leer). Si se llama setAll
+         * desde un Server Component, el error se ignora silenciosamente.
+         *
+         * En Route Handlers y Server Actions, setAll funciona correctamente.
+         * En Server Components, la sesion se refresca en el proximo Route Handler
+         * (o via middleware si se agrega en el futuro).
+         *
+         * DECISION TECNICA: Se eligio este enfoque (try/catch en setAll) sobre
+         * agregar middleware de refresh porque es mas simple para el MVP.
+         * Ver discusion en: https://supabase.com/docs/guides/auth/server-side/nextjs
+         */
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Ignorar error en Server Components puros. Esperado y seguro.
+          }
+        },
+      },
+    }
+  )
+}

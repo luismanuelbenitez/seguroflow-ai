@@ -8,8 +8,8 @@
 
 ## Estado general
 
-**Fase:** Skeleton tecnico validado. Listo para implementar primer modulo.
-**Progreso:** Next.js 15 skeleton creado y buildeado. Migracion 001 validada localmente con supabase db reset (NO aplicada remotamente). Tipos TypeScript generados desde DB local. Reglas de seguridad Supabase documentadas.
+**Fase:** Auth basico implementado. Listo para implementar dashboard del producer.
+**Progreso:** Auth magic link completo (login → callback → dashboard protegido). npm run build exitoso. Migracion 001 validada localmente (NO aplicada remotamente). supabase db push sigue prohibido sin confirmacion humana.
 
 ---
 
@@ -113,7 +113,7 @@
 
 - **No ejecutar supabase db push** (migracion remota) hasta verificar project-ref = `fawlbfkkxufyhnghynjk`. Ver SUPABASE_SAFETY_RULES.md.
 - **No tocar el proyecto TuHoroscopoCosmico.com** desde este repo bajo ninguna circunstancia.
-- **No avanzar a funcionalidad real** sin antes implementar Auth (login/logout) para el producer.
+- **No avanzar a consultas de negocio** sin verificar que el usuario pertenece a un producer (tabla producer_members).
 - **No crear infraestructura productiva** hasta tener los templates HSM aprobados por Meta.
 - **No contactar prospectos reales** con mensajes de prueba.
 - **No comprometerse con productores** en fechas de entrega sin tener la primera migración de Supabase validada.
@@ -135,11 +135,17 @@
 ✅ 8. supabase db reset local exitoso: migracion 001 aplicada sin errores
 ✅ 9. types/database.ts generado desde DB local (10 tablas, ENUMs, funciones)
 ✅ 10. supabase/config.toml creado (supabase init)
-   11. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
-   12. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
-   13. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
-   14. Implementar Auth: login/logout con Supabase Auth magic link
-   15. Iniciar implementacion MVP-01 siguiendo CODING_RULES.md
+✅ 11. Auth magic link implementado: /login → /auth/callback → /dashboard
+        - lib/supabase/server.ts (createClient con cookies SSR)
+        - app/actions/auth.ts (sendMagicLink, signOut — Server Actions)
+        - app/login/page.tsx (formulario con useActionState React 19)
+        - app/auth/callback/route.ts (intercambio code → sesion)
+        - app/dashboard/page.tsx (ruta protegida con getUser())
+   12. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
+   13. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
+   14. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
+   15. Implementar dashboard funcional del producer (quotes, prospects)
+   16. Iniciar implementacion MVP-01 (deteccion de cotizaciones, envio de mensajes)
 ```
 
 ---
