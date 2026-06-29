@@ -27,7 +27,7 @@ seguroflow-ai/
   lib/
     supabase/
       client.ts               # Cliente Supabase para el browser (publishable key)
-      server.ts               # Cliente Supabase server-side (placeholder)
+      server.ts               # Cliente Supabase server-side con cookies SSR
     ai/
       adapters/               # Adapters para proveedores LLM (Claude, etc.)
     whatsapp/

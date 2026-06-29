@@ -47,8 +47,26 @@ export async function GET(request: Request) {
   // El `code` es el token temporal que Supabase incluye en la URL del magic link
   const code = searchParams.get('code')
 
-  // `next` permite redirigir a una ruta especifica post-login (no usado todavia en el MVP)
-  const next = searchParams.get('next') ?? '/dashboard'
+  /*
+   * SEGURIDAD — Validacion del parametro `next` para prevenir open redirects.
+   *
+   * Un open redirect ocurre cuando un atacante construye una URL como:
+   *   /auth/callback?code=X&next=https://sitio-malicioso.com
+   * y el handler redirige al usuario a ese dominio externo sin validar.
+   *
+   * Reglas de validacion:
+   *   1. `next` debe existir y ser un string no vacio.
+   *   2. Debe comenzar con "/" — garantiza que es una ruta relativa del sitio.
+   *   3. NO debe comenzar con "//" — "//" es un protocolo-relativo que el browser
+   *      interpreta como URL externa (ej: "//evil.com" → "https://evil.com").
+   *
+   * Si no cumple alguna regla → se usa /dashboard como destino seguro por defecto.
+   */
+  const rawNext = searchParams.get('next')
+  const next =
+    rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
+      ? rawNext
+      : '/dashboard'
 
   if (!code) {
     // Sin code, no se puede completar el auth. Redirect al login con error.

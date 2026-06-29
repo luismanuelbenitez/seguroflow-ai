@@ -105,7 +105,7 @@
 | Proyecto PROHIBIDO | `TuHoroscopoCosmico.com` — nunca tocar desde este repo |
 | Estado de migracion remota | **NO aplicada** — solo validada localmente con `db reset` |
 | `supabase db push` | PROHIBIDO sin confirmacion humana explicita + verificacion de project-ref |
-| Proximo paso Supabase | Auth basico local (no remoto). La migracion remota espera hasta tener el proyecto cloud configurado. |
+| Proximo paso Supabase | Dashboard local del producer + verificacion de producer_members. No remoto. La migracion remota espera hasta tener el proyecto cloud configurado. |
 
 ---
 
