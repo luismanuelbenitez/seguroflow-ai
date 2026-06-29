@@ -249,6 +249,10 @@ del sandbox y la madurez del SDK TypeScript. Revisar antes del primer mensaje re
   flujo técnico M2, variables de entorno y seguridad.
 - Se crea `docs/07-go-to-market/PRE_PILOT_CHECKLIST.md` con checklist operativo,
   de datos, legal y guion de demo para el producer.
+- Se crea `docs/07-go-to-market/DEMO_SCRIPT_5_MIN.md` con guion comercial de 5
+  minutos: pitch, pasos de demo, discovery, objeciones, cierre y versión 60 segundos.
+  **Antes de invertir en infraestructura cloud o WhatsApp real, se prioriza la
+  validación comercial con demos guiadas a productores reales.**
 - **Sin cambios de código ni de migraciones.** Todo lo producido es documentación.
 - **supabase db push sigue prohibido** hasta autorización humana explícita.
 - **TuHoroscopoCosmico.com sigue prohibido** desde este repositorio.

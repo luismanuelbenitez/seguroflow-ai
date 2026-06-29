@@ -427,8 +427,26 @@ WhatsApp real a un prospecto real.
 
 ---
 
+## Paso previo recomendado: demo guiada con el productor
+
+Antes de completar este checklist y avanzar al piloto real, se recomienda
+realizar al menos una demo guiada con el productor usando el sistema local.
+
+El guion de demo está documentado en:
+`docs/07-go-to-market/DEMO_SCRIPT_5_MIN.md`
+
+La demo tiene dos objetivos: validar que el flujo tiene sentido para el productor
+(antes de invertir en infraestructura cloud y WhatsApp real), y recopilar
+las respuestas a las preguntas de discovery que informarán el diseño del piloto.
+
+No avanzar a los criterios de piloto real sin haber hecho la demo y recibido
+feedback del productor sobre el flujo completo.
+
+---
+
 ## Referencias
 
+- DEMO_SCRIPT_5_MIN.md: guion de demo comercial de 5 minutos → `docs/07-go-to-market/DEMO_SCRIPT_5_MIN.md`
 - WHATSAPP_REAL_PLAN.md: plan técnico de integración → `docs/06-integrations/WHATSAPP_REAL_PLAN.md`
 - PILOT_PLAN.md: plan de 30 días con métricas y contingencias → `docs/07-go-to-market/PILOT_PLAN.md`
 - DISCOVERY_QUESTIONS.md: preguntas de discovery para entrevistar producers → `docs/07-go-to-market/DISCOVERY_QUESTIONS.md`

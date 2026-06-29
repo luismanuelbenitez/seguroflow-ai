@@ -10,8 +10,8 @@
 
 ## Estado general
 
-**Fase:** MVP local fase 1 completo + UX de demo comercial + documentación de transición a piloto real.
-**Progreso:** Flujo completo simulado + métricas + polish visual + plan WhatsApp M2 + checklist pre-piloto documentados. Listo para mostrar a productor piloto y tomar la decisión de avanzar a piloto real. Sin WhatsApp real. Sin IA. Sin migraciones. supabase db push sigue prohibido. TuHoroscopoCosmico.com sigue prohibido.
+**Fase:** MVP local fase 1 completo + UX de demo comercial + documentación go-to-market lista.
+**Progreso:** Flujo completo simulado + métricas + polish visual + plan WhatsApp M2 + checklist pre-piloto + guion de demo comercial documentados. Listo para ejecutar demos con productores reales y validar la hipótesis comercial. Sin WhatsApp real. Sin IA. Sin migraciones. supabase db push sigue prohibido. TuHoroscopoCosmico.com sigue prohibido.
 
 **Usuario demo local:** demo@seguroflow.local (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1 — valido solo en la DB local actual)
 
@@ -61,6 +61,7 @@
 | `PILOT_PLAN.md` | Plan de 30 días con productores piloto, métricas, contingencias, precio | Completo |
 | `DISCOVERY_QUESTIONS.md` | 32 preguntas para entrevistar productores antes de programar | Completo |
 | `PRE_PILOT_CHECKLIST.md` | Checklist pre-piloto: requisitos técnicos, datos, legales, guion de demo, criterios de avance | Completo |
+| `DEMO_SCRIPT_5_MIN.md` | Guion comercial de demo de 5 minutos: pitch, pasos, discovery, objeciones, cierre, versión 60s | Completo |
 
 ### `/docs/04-decisiones/` — Decisiones técnicas
 | Archivo | Contenido | Estado |
@@ -340,6 +341,20 @@
         - IA real: NO integrada
         - db push: NO ejecutado
         - TuHoroscopoCosmico.com: NO tocado
+✅ 27. Guion comercial de demo de 5 minutos — docs/07-go-to-market/DEMO_SCRIPT_5_MIN.md
+        - Pitch inicial de 30 segundos (lenguaje natural, no corporativo)
+        - 8 pasos de demo con qué mostrar y qué decir en cada pantalla
+        - 13 preguntas de discovery para intercalar durante la demo
+        - 8 objeciones probables con respuestas honestas
+          (no prometer WhatsApp real ya listo, no prometer IA autonoma,
+           no prometer cumplimiento legal definitivo)
+        - Cierre con propuesta de siguiente paso concreta (10-20 cotizaciones prueba)
+        - Version corta de 60 segundos para WhatsApp o llamada
+        - PRE_PILOT_CHECKLIST.md actualizado: referencia al guion como paso previo recomendado
+        - db push: NO ejecutado
+        - WhatsApp real: NO integrado
+        - TuHoroscopoCosmico.com: NO tocado
+        - Datos reales: NO usados
 ✅ 26. Documentacion de transicion a piloto real — M2 WhatsApp + checklist pre-piloto
         - docs/06-integrations/WHATSAPP_REAL_PLAN.md:
           Analisis comparativo de 3 proveedores (Meta, Twilio, 360dialog) con pros/contras/riesgos
@@ -415,8 +430,9 @@
         - TuHoroscopoCosmico.com: NO tocado
    Proximos pasos recomendados (elegir uno para la siguiente sesion):
 
-   A) DEMO SCRIPT COMERCIAL — Preparar el guion de presentacion real para un producer
-      (adaptar el guion del PRE_PILOT_CHECKLIST.md a datos mas concretos del piloto)
+   A) DISCOVERY CON PRODUCTORES — Ejecutar la demo con 3-5 producers reales usando
+      DEMO_SCRIPT_5_MIN.md + DISCOVERY_QUESTIONS.md como guia
+      Objetivo: validar hipotesis comercial antes de invertir en infraestructura cloud
 
    B) DECISION PROVEEDOR WHATSAPP — Tomar la decision DECISION-007 sobre proveedor WABA
       Evaluar: ¿el primer producer piloto ya tiene cuenta Twilio o WABA activo?
