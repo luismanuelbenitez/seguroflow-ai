@@ -10,13 +10,20 @@
  *   - Next.js serializa y valida automaticamente el FormData.
  *   - La directiva 'use server' garantiza que este codigo NUNCA se envia al browser.
  *
+ * ESTRATEGIA DE AUTH (DECISION-007):
+ *   - Email + password es el metodo principal de acceso.
+ *   - Magic link se conserva como fallback tecnico secundario — no es el flujo central.
+ *   - MFA y Google login quedan como evolucion futura.
+ *   - Ver: docs/04-decisiones/DECISION-007-auth-strategy-pilot.md
+ *
  * SEGURIDAD GLOBAL DE ESTE MODULO:
  *   - Ningun dato PII (email del usuario) se loguea en consola ni en servicios externos.
  *   - Los tokens de sesion son manejados exclusivamente por Supabase SSR via cookies HttpOnly.
  *   - NUNCA retornar tokens, keys o datos de sesion al cliente. Solo mensajes de estado.
+ *   - NUNCA usar service role key aqui. Solo la publishable/anon key via el cliente SSR.
  *
- * Ver: docs/00-ai-context/CODING_RULES.md (Seccion 5 — Datos sensibles)
  * Ver: docs/04-decisiones/DECISION-003-multitenant-rls.md
+ * Ver: docs/04-decisiones/DECISION-007-auth-strategy-pilot.md
  */
 
 import { redirect } from 'next/navigation'
@@ -35,88 +42,73 @@ export type AuthActionResult = {
 }
 
 /*
- * INTENCION: Enviar un magic link al email del usuario para iniciar sesion.
- * Esta es la unica forma de autenticacion del MVP (magic link / OTP por email).
+ * INTENCION: Autenticar al usuario con email + password.
+ * Este es el flujo principal de login (DECISION-007).
  *
  * FLUJO:
- *   1. Extrae y valida el email del FormData.
+ *   1. Extrae y valida email y password del FormData.
  *   2. Crea el cliente Supabase server-side (con contexto de cookies).
- *   3. Llama a supabase.auth.signInWithOtp() — Supabase envia el email.
- *   4. Retorna un mensaje de resultado al componente que llamo la accion.
- *   NOTA: Esta funcion NO redirige. La redireccion ocurre en /auth/callback
- *   cuando el usuario hace click en el link del email.
+ *   3. Llama a supabase.auth.signInWithPassword() — Supabase valida credenciales.
+ *   4. Si es exitoso, redirige a /dashboard con sesion activa.
+ *   5. Si falla, retorna mensaje de error al componente.
  *
  * ENTRADAS:
- *   @param _prevState {AuthActionResult} — Estado anterior (requerido por useActionState de React 19)
- *   @param formData {FormData} — Formulario con campo 'email'
+ *   @param _prevState {AuthActionResult} — Estado anterior (requerido por useActionState)
+ *   @param formData {FormData} — Formulario con campos 'email' y 'password'
  *
  * SALIDAS:
  *   @returns {Promise<AuthActionResult>} — { message, isError }
+ *   NOTA: En exito no retorna — ejecuta redirect('/dashboard').
  *
  * ERRORES POSIBLES:
- *   - Email invalido o vacio → retorna isError: true con mensaje amigable
- *   - Rate limit de Supabase (2 emails/hora en local) → isError: true
+ *   - Email o password vacios → isError: true con mensaje amigable
+ *   - Credenciales incorrectas → isError: true (sin revelar cual campo fallo)
+ *   - Usuario no existe → misma respuesta que credenciales incorrectas (anti-enumeracion)
  *   - Supabase no disponible → isError: true con mensaje generico
  *
  * SEGURIDAD:
- *   - El email NO se loguea (es PII segun Ley 18.331 Uruguay).
- *   - Solo se loguea el codigo de error de Supabase si falla (sin el email).
- *   - El magic link expira segun configuracion de Supabase (default: 1 hora).
- *   - Si el email no existe en Supabase, la API responde igual que si existiera
- *     (para no revelar que emails estan registrados — proteccion de enumeracion).
+ *   - El email y password NO se loguan (son PII y credencial).
+ *   - Solo se loguea el codigo de error de Supabase si falla (sin las credenciales).
+ *   - No diferenciamos "email no existe" de "password incorrecto" — anti user enumeration.
+ *   - Supabase limita intentos de login fallidos por IP (rate limiting automatico).
  *
- * DECISION TECNICA — Magic link sobre password:
- *   - El piloto tiene pocos usuarios (productores de seguros conocidos).
- *   - Elimina riesgo de contrasenas debiles o reutilizadas.
- *   - Reduce friccion de onboarding: no hay registro separado ni verificacion.
- *   - Menos superficie de ataque: no hay hashes de password que proteger.
+ * NO HACER:
+ *   - No manejar el hash de la password manualmente.
+ *   - No comparar passwords directamente.
+ *   - No usar service role key.
  */
-export async function sendMagicLink(
+export async function signInWithPassword(
   _prevState: AuthActionResult,
   formData: FormData
 ): Promise<AuthActionResult> {
   const email = formData.get('email')
+  const password = formData.get('password')
 
-  // Validacion basica del email antes de llamar a Supabase
   if (!email || typeof email !== 'string' || !email.trim().includes('@')) {
-    return {
-      message: 'Ingresa un email valido para continuar.',
-      isError: true,
-    }
+    return { message: 'Ingresa un email valido para continuar.', isError: true }
+  }
+
+  if (!password || typeof password !== 'string' || password.length < 6) {
+    return { message: 'Ingresa tu password para continuar.', isError: true }
   }
 
   const supabase = await createClient()
 
-  const { error } = await supabase.auth.signInWithOtp({
+  const { error } = await supabase.auth.signInWithPassword({
     email: email.trim(),
-    options: {
-      /*
-       * emailRedirectTo: URL donde Supabase redirige despues de que el usuario
-       * hace click en el link del email. Debe estar en la lista de URLs permitidas
-       * del proyecto Supabase (additional_redirect_urls en supabase/config.toml
-       * para local, o en el dashboard de Supabase para produccion).
-       *
-       * NEXT_PUBLIC_SITE_URL:
-       *   Local:      http://localhost:3000
-       *   Produccion: https://tu-dominio.vercel.app
-       */
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-    },
+    password: password,
   })
 
   if (error) {
-    // No logueamos el email (PII). Solo el codigo y status del error de Supabase.
-    console.error('[auth] sendMagicLink error — status:', error.status, '| code:', error.code)
+    console.error('[auth] signInWithPassword error — code:', error.code, '| status:', error.status)
     return {
-      message: 'No pudimos enviar el email. Espera unos minutos e intenta de nuevo.',
+      message: 'Email o password incorrecto. Verifica tus credenciales e intentá de nuevo.',
       isError: true,
     }
   }
 
-  return {
-    message: 'Revisa tu email. Te enviamos un link para ingresar.',
-    isError: false,
-  }
+  // Sesion creada exitosamente. redirect() lanza internamente — no retorna.
+  redirect('/dashboard')
 }
 
 /*
@@ -135,15 +127,54 @@ export async function sendMagicLink(
  *   - Despues del redirect, el usuario no puede acceder a rutas protegidas.
  *
  * NOTA TECNICA: redirect() de Next.js lanza internamente un error especial
- * que el framework captura para ejecutar la redireccion. No es un error real
- * del codigo — es el mecanismo de Next.js para redirecciones desde Server Actions.
+ * que el framework captura para ejecutar la redireccion. No es un error real.
  */
 export async function signOut(): Promise<never> {
   const supabase = await createClient()
-
-  // Invalidar sesion en Supabase (limpia cookies de sesion via SSR)
   await supabase.auth.signOut()
-
-  // Redirigir al login. redirect() nunca retorna — lanza internamente.
   redirect('/login')
+}
+
+/*
+ * FALLBACK SECUNDARIO — Magic link (OTP por email).
+ *
+ * NO es el flujo principal desde DECISION-007. Se conserva como opcion tecnica
+ * de reserva. No debe aparecer como camino recomendado en la UI principal.
+ *
+ * Requiere que Supabase local este corriendo (Mailpit en localhost:54324).
+ * En produccion requiere un proveedor SMTP configurado.
+ *
+ * Ver: docs/04-decisiones/DECISION-007-auth-strategy-pilot.md
+ */
+export async function sendMagicLink(
+  _prevState: AuthActionResult,
+  formData: FormData
+): Promise<AuthActionResult> {
+  const email = formData.get('email')
+
+  if (!email || typeof email !== 'string' || !email.trim().includes('@')) {
+    return { message: 'Ingresa un email valido para continuar.', isError: true }
+  }
+
+  const supabase = await createClient()
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email: email.trim(),
+    options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+    },
+  })
+
+  if (error) {
+    console.error('[auth] sendMagicLink error — status:', error.status, '| code:', error.code)
+    return {
+      message: 'No pudimos enviar el email. Espera unos minutos e intenta de nuevo.',
+      isError: true,
+    }
+  }
+
+  return {
+    message: 'Revisa tu email. Te enviamos un link para ingresar.',
+    isError: false,
+  }
 }

@@ -260,6 +260,38 @@ del sandbox y la madurez del SDK TypeScript. Revisar antes del primer mensaje re
 
 ---
 
-*Próximas decisiones pendientes: proveedor WABA definitivo (DECISION-007), número
-WABA del piloto (central vs. del producer), retención de datos, gestión de secrets
-para multi-productor, precio y modelo de cobro.*
+---
+
+## [DECISION-007] Estrategia de autenticación — email + password como método principal
+
+- **Fecha:** 2026-06-29
+- **Estado:** Aceptada
+- **Reemplaza parcialmente:** DECISION-002 (auth con magic link)
+- **Documento completo:** [DECISION-007-auth-strategy-pilot.md](DECISION-007-auth-strategy-pilot.md)
+
+### Contexto
+
+El magic link generó fricción real durante las primeras pruebas locales: bugs en el
+flow PKCE/implicit, emails que tardaban, links de un solo uso quemados, y una demo
+comercial que dependía de que llegara un email para poder mostrar valor.
+
+### Decisión tomada
+
+**Email + password pasa a ser el método principal de autenticación.**
+
+Magic link se conserva como fallback técnico secundario en el código pero no aparece
+como flujo principal en la UI. MFA y Google login quedan como evolución futura.
+Gmail integración es un módulo de negocio separado — no tiene relación con el login.
+
+### Consecuencias principales
+
+- `app/login/page.tsx` rediseñado: formulario email + password como principal.
+- `app/actions/auth.ts` actualizado: se agrega `signInWithPassword()` como acción principal.
+- Usuario demo: `demo@seguroflow.local` / `Demo123456!` (solo local).
+- Sin cambios de schema ni migraciones. Sin `supabase db push`.
+
+---
+
+*Próximas decisiones pendientes: proveedor WABA definitivo, número WABA del piloto
+(central vs. del producer), reset password, invitación controlada de usuarios,
+retención de datos, gestión de secrets para multi-productor, precio y modelo de cobro.*

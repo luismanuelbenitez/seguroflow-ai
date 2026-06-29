@@ -1,39 +1,34 @@
 'use client'
 
 /*
- * INTENCION: Pagina de login con magic link (OTP por email).
- * El usuario ingresa su email y recibe un link para acceder sin password.
+ * INTENCION: Pagina de login con email + password como flujo principal.
  *
  * POR QUE 'use client':
  *   - useActionState de React 19 requiere ejecucion en el cliente.
- *   - Necesitamos estado reactivo para mostrar el mensaje de resultado
- *     y deshabilitar el boton mientras se procesa el request.
- *   - La accion del formulario (sendMagicLink) corre en el servidor —
- *     el 'use client' solo aplica al componente de presentacion.
+ *   - La accion del formulario (signInWithPassword) corre en el servidor.
+ *   - El 'use client' solo aplica al componente de presentacion.
  *
- * FLUJO DE AUTENTICACION COMPLETO:
- *   1. [Esta pagina] Usuario ingresa email y envia el formulario.
- *   2. [app/actions/auth.ts] sendMagicLink() llama a Supabase OTP.
- *   3. [Supabase / Inbucket local] Email con magic link es enviado.
- *   4. [Usuario] Hace click en el link del email.
- *   5. [app/auth/callback/route.ts] Supabase intercambia el code por sesion.
- *   6. [Browser] Redireccion a /dashboard con sesion activa.
+ * ESTRATEGIA DE AUTH (DECISION-007):
+ *   Email + password es el metodo principal. Magic link queda como fallback
+ *   tecnico secundario — no es el camino recomendado para la demo ni el piloto.
  *
- * Para testear localmente:
- *   - Los emails se capturan en Inbucket: http://localhost:54324
- *   - Ver README.md seccion "Probar Auth localmente" para detalles.
+ * FLUJO DE AUTENTICACION:
+ *   1. [Esta pagina] Usuario ingresa email + password y envia el formulario.
+ *   2. [app/actions/auth.ts] signInWithPassword() valida con Supabase Auth.
+ *   3. Si es exitoso, Supabase escribe las cookies de sesion y redirige a /dashboard.
+ *   4. Si falla, se muestra el mensaje de error en el formulario.
  *
- * Ver: docs/02-mvp/MVP-01-recuperador-cotizaciones.md
+ * ACCESO DEMO LOCAL:
+ *   Email:    demo@seguroflow.local
+ *   Password: Demo123456!
+ *
+ * Ver: docs/04-decisiones/DECISION-007-auth-strategy-pilot.md
  * Ver: app/actions/auth.ts (la logica real del login)
  */
 
 import { useActionState } from 'react'
-import { sendMagicLink, type AuthActionResult } from '@/app/actions/auth'
+import { signInWithPassword, type AuthActionResult } from '@/app/actions/auth'
 
-/*
- * Estado inicial del formulario. message vacio = sin feedback todavia.
- * isError false = no hay error pendiente de mostrar.
- */
 const INITIAL_STATE: AuthActionResult = {
   message: '',
   isError: false,
@@ -42,34 +37,30 @@ const INITIAL_STATE: AuthActionResult = {
 export default function LoginPage() {
   /*
    * useActionState (React 19): conecta el Server Action con el estado del formulario.
-   *   - state: el ultimo resultado de sendMagicLink (message + isError)
+   *   - state: el ultimo resultado de signInWithPassword (message + isError)
    *   - formAction: la accion que conectar al prop action del <form>
-   *   - isPending: true mientras el Server Action esta procesando (bloquea el boton)
-   *
-   * DECISION TECNICA: Se usa useActionState sobre useState + fetch porque:
-   *   - Integra nativamente con el modelo de Server Actions de Next.js 15.
-   *   - Maneja automaticamente el pending state y el FormData.
-   *   - No requiere un endpoint API separado.
+   *   - isPending: true mientras el Server Action procesa (bloquea el boton)
    */
-  const [state, formAction, isPending] = useActionState(sendMagicLink, INITIAL_STATE)
+  const [state, formAction, isPending] = useActionState(signInWithPassword, INITIAL_STATE)
 
   return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem', maxWidth: '400px', margin: '0 auto' }}>
+    <main
+      style={{
+        fontFamily: 'system-ui, sans-serif',
+        padding: '2rem',
+        maxWidth: '400px',
+        margin: '0 auto',
+      }}
+    >
       <h1 style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>SeguroFlow AI</h1>
-      <p style={{ color: '#666', marginTop: 0, marginBottom: '2rem' }}>
-        Ingresa tu email para recibir un magic link de acceso.
+      <p style={{ color: '#6b7280', marginTop: 0, marginBottom: '2rem', fontSize: '0.9rem' }}>
+        Ingresa con tu email y password.
       </p>
 
-      {/*
-       * El form apunta al Server Action via formAction.
-       * React serializa el FormData automaticamente al hacer submit.
-       * No hay onSubmit manual ni fetch() — Next.js maneja todo.
-       */}
       <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         <label htmlFor="email" style={{ fontWeight: 500, fontSize: '0.9rem' }}>
           Email
         </label>
-
         <input
           id="email"
           name="email"
@@ -80,7 +71,28 @@ export default function LoginPage() {
           disabled={isPending}
           style={{
             padding: '0.6rem 0.75rem',
-            border: '1px solid #ccc',
+            border: '1px solid #d1d5db',
+            borderRadius: '6px',
+            fontSize: '1rem',
+            width: '100%',
+            boxSizing: 'border-box',
+          }}
+        />
+
+        <label htmlFor="password" style={{ fontWeight: 500, fontSize: '0.9rem', marginTop: '0.25rem' }}>
+          Password
+        </label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          placeholder="••••••••"
+          required
+          autoComplete="current-password"
+          disabled={isPending}
+          style={{
+            padding: '0.6rem 0.75rem',
+            border: '1px solid #d1d5db',
             borderRadius: '6px',
             fontSize: '1rem',
             width: '100%',
@@ -92,25 +104,21 @@ export default function LoginPage() {
           type="submit"
           disabled={isPending}
           style={{
+            marginTop: '0.25rem',
             padding: '0.65rem 1rem',
-            background: isPending ? '#999' : '#2563eb',
+            background: isPending ? '#9ca3af' : '#2563eb',
             color: '#fff',
             border: 'none',
             borderRadius: '6px',
             fontSize: '1rem',
             cursor: isPending ? 'not-allowed' : 'pointer',
-            fontWeight: 500,
+            fontWeight: 600,
           }}
         >
-          {isPending ? 'Enviando...' : 'Enviar magic link'}
+          {isPending ? 'Verificando...' : 'Entrar'}
         </button>
       </form>
 
-      {/*
-       * Feedback al usuario tras el submit.
-       * Verde para exito, rojo para error.
-       * Solo se muestra si hay un message (string no vacio).
-       */}
       {state.message && (
         <p
           role="status"
@@ -126,6 +134,30 @@ export default function LoginPage() {
           {state.message}
         </p>
       )}
+
+      {/* Credenciales de demo local — visible solo en entorno local */}
+      <div
+        style={{
+          marginTop: '2rem',
+          padding: '0.875rem',
+          background: '#f0f9ff',
+          border: '1px solid #bae6fd',
+          borderRadius: '8px',
+          fontSize: '0.82rem',
+          color: '#0369a1',
+        }}
+      >
+        <p style={{ margin: '0 0 0.4rem', fontWeight: 600 }}>Acceso demo local</p>
+        <p style={{ margin: '0 0 0.25rem' }}>
+          Email: <code style={{ background: '#e0f2fe', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>demo@seguroflow.local</code>
+        </p>
+        <p style={{ margin: '0 0 0.5rem' }}>
+          Password: <code style={{ background: '#e0f2fe', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>Demo123456!</code>
+        </p>
+        <p style={{ margin: 0, color: '#64748b', fontSize: '0.78rem' }}>
+          No usar datos reales. Solo entorno local.
+        </p>
+      </div>
     </main>
   )
 }

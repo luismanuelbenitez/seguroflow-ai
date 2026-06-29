@@ -62,6 +62,11 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
+      auth: {
+        // Sin esto, signInWithOtp usa implicit flow (tokens en #hash).
+        // Con pkce, Supabase redirige a /auth/callback?code= y exchangeCodeForSession funciona.
+        flowType: 'pkce',
+      },
       cookies: {
         /*
          * getAll: Supabase lee las cookies actuales para reconstruir la sesion del usuario.

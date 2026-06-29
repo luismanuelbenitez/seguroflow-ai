@@ -10,10 +10,11 @@
 
 ## Estado general
 
-**Fase:** MVP local fase 1 completo + paquete go-to-market completo para discovery comercial.
-**Progreso:** Flujo completo simulado + métricas + polish visual + plan WhatsApp M2 + checklist pre-piloto + guion de demo + runbook de discovery + plantilla de feedback + mensajes de outreach. Listo para salir a ejecutar 3-5 entrevistas con productores reales. Sin WhatsApp real. Sin IA. Sin migraciones. supabase db push sigue prohibido. TuHoroscopoCosmico.com sigue prohibido.
+**Fase:** MVP local fase 1 completo + paquete go-to-market completo + estrategia de auth actualizada.
+**Progreso:** Flujo completo simulado + métricas + polish visual + plan WhatsApp M2 + checklist pre-piloto + guion de demo + runbook de discovery + plantilla de feedback + mensajes de outreach + auth email+password como principal. Listo para demo comercial con acceso directo sin dependencia de email. Sin WhatsApp real. Sin IA. Sin migraciones. supabase db push sigue prohibido. TuHoroscopoCosmico.com sigue prohibido.
 
-**Usuario demo local:** demo@seguroflow.local (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1 — valido solo en la DB local actual)
+**Auth principal:** Email + password (DECISION-007). Magic link disponible como fallback técnico, no visible en la UI.
+**Usuario demo local:** demo@seguroflow.local / Demo123456! (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1 — valido solo en la DB local actual)
 
 ---
 
@@ -69,11 +70,12 @@
 ### `/docs/04-decisiones/` — Decisiones técnicas
 | Archivo | Contenido | Estado |
 |---|---|---|
-| `DECISION-LOG.md` | Índice de decisiones — 6 entradas registradas | 6 entradas |
+| `DECISION-LOG.md` | Índice de decisiones — 7 entradas registradas | 7 entradas |
 | `DECISION-002-stack-tecnologico-inicial.md` | Stack completo: Next.js, Supabase, Claude, Twilio, Vercel, Docker | Completo |
 | `DECISION-003-multitenant-rls.md` | Modelo multi-tenant: profiles, producers, producer_members, RLS, opt-out, service role | Completo |
 | `DECISION-004-ingesta-cotizaciones-mvp.md` | Formulario manual primero, CSV post-piloto | Completo |
 | `DECISION-005-flujo-seguimiento-whatsapp-mvp.md` | Flujo manual asistido: 3 mensajes, aprobación del producer, sin WABA todavía | Completo |
+| `DECISION-007-auth-strategy-pilot.md` | Email + password como auth principal. Magic link → fallback. MFA/Google/Gmail: futuro | Completo |
 
 ---
 
@@ -87,6 +89,7 @@
 | 004 | Ingesta de cotizaciones MVP: formulario manual primero. CSV diferido a fase post-piloto | 2026-06-29 |
 | 005 | Flujo de seguimiento WhatsApp: modo manual asistido. 3 mensajes max, aprobacion del producer | 2026-06-29 |
 | 006 | Preparacion M2 WhatsApp real: documentacion de proveedores, flujo tecnico y checklist pre-piloto | 2026-06-29 |
+| 007 | Auth email + password como metodo principal. Magic link queda como fallback tecnico secundario | 2026-06-29 |
 | — | MVP es el Recuperador de Cotizaciones por WhatsApp, no una suite completa | 2026-06-28 |
 | — | La IA asiste y escala; no emite, no promete cobertura, no interpreta pólizas | 2026-06-28 |
 | — | Capa de abstracción LLM obligatoria: el código de negocio no llama a Anthropic directamente | 2026-06-28 |
@@ -154,11 +157,11 @@
 ✅ 8. supabase db reset local exitoso: migracion 001 aplicada sin errores
 ✅ 9. types/database.ts generado desde DB local (10 tablas, ENUMs, funciones)
 ✅ 10. supabase/config.toml creado (supabase init)
-✅ 11. Auth magic link implementado: /login → /auth/callback → /dashboard
-        - lib/supabase/server.ts (createClient con cookies SSR)
-        - app/actions/auth.ts (sendMagicLink, signOut — Server Actions)
-        - app/login/page.tsx (formulario con useActionState React 19)
-        - app/auth/callback/route.ts (intercambio code → sesion, open redirect protegido)
+✅ 11. Auth implementado: /login → /dashboard (DECISION-007: email+password como principal)
+        - lib/supabase/server.ts (createClient con cookies SSR + flowType: 'pkce')
+        - app/actions/auth.ts (signInWithPassword como principal, sendMagicLink como fallback)
+        - app/login/page.tsx (formulario email+password con credenciales demo visibles)
+        - app/auth/callback/route.ts (intercambio code → sesion, open redirect protegido — para magic link fallback)
         - app/dashboard/page.tsx (ruta protegida con getUser())
 ✅ 12. Dashboard local del producer con verificacion de producer_members
         - lib/producers/get-current-producer-context.ts (helper server-side)
@@ -344,6 +347,27 @@
         - IA real: NO integrada
         - db push: NO ejecutado
         - TuHoroscopoCosmico.com: NO tocado
+✅ 29. Auth actualizado: email + password como metodo principal (DECISION-007)
+        - app/actions/auth.ts: signInWithPassword() como accion principal; sendMagicLink() como fallback
+        - app/login/page.tsx: formulario email + password; credenciales demo visibles en UI
+        - lib/supabase/server.ts: flowType: 'pkce' agregado (fix de bug de auth anterior)
+        - .env.local: NEXT_PUBLIC_SITE_URL cambiado a http://127.0.0.1:3000 (fix cookie domain)
+        - Usuarios configurados via Admin API local (service role local en terminal, no en frontend):
+          demo@seguroflow.local / Demo123456! (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1)
+          mbenitezmdeo@gmail.com / Demo123456! (user_id: 01c76b54-af8f-4582-b42d-d655034c2431)
+        - docs/04-decisiones/DECISION-007-auth-strategy-pilot.md: decision completa
+        - DECISION-LOG.md: entrada DECISION-007 agregada
+        - README.md: seccion "Login local con email + password" con credenciales, pasos, curl
+        - AI_BRIEF.md: fila Auth actualizada
+        - CURRENT_STATE.md: estado, usuario demo y pasos actualizados
+        - docs/07-go-to-market/PRE_PILOT_CHECKLIST.md: auth section actualizada
+        - Magic link: sigue disponible en codigo como fallback, no es el flujo central
+        - MFA: futuro. Google login: futuro. Gmail integracion: modulo separado, futuro.
+        - db push: NO ejecutado
+        - TuHoroscopoCosmico.com: NO tocado
+        - Datos reales: NO usados
+        - Service role: usado SOLO en terminal local para setear passwords, nunca en frontend
+
 ✅ 28. Paquete de discovery comercial completo
         - docs/07-go-to-market/DISCOVERY_RUNBOOK.md:
           Objetivo de discovery (5 hipotesis a validar)

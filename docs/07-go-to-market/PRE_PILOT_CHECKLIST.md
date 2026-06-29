@@ -75,9 +75,13 @@ más pueda validar la hipótesis con el menor riesgo.
       - Ver SUPABASE_SAFETY_RULES.md antes de cualquier acción remota.
 
 - [ ] **Auth funcionando en producción.**
-      - Magic link enviado al email del producer piloto.
+      - Email + password configurados para el producer piloto (DECISION-007).
+        No usar magic link como flujo principal — el acceso no puede depender del email para cada sesión.
       - El producer puede hacer login desde su teléfono y desde la computadora.
       - Sesión persiste correctamente.
+      - Reset password disponible (implementar antes del piloto real).
+      - Registro público cerrado: solo usuarios creados por el equipo, sin signup abierto.
+      - MFA: evaluar si el producer piloto lo requiere (futuro — no en el MVP).
 
 - [ ] **Usuario producer creado en la base de datos cloud.**
       - `auth.users` con el email del producer piloto.

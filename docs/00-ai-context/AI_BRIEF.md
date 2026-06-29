@@ -74,7 +74,7 @@ Ante cualquier duda → el sistema escala al productor.
 |---|---|
 | Frontend / Backend | Next.js 15 (App Router) + TypeScript |
 | Base de datos | Supabase (PostgreSQL) con RLS desde la primera migración |
-| Auth | Supabase Auth (magic link para el piloto) |
+| Auth | Supabase Auth — email + password (principal, DECISION-007). Magic link como fallback. |
 | WhatsApp (desarrollo) | Twilio sandbox |
 | WhatsApp (piloto real) | 360dialog o Meta Cloud API directa — a confirmar |
 | LLM generación | Claude claude-sonnet-4-6 (Anthropic) via capa de abstracción |
@@ -105,7 +105,7 @@ Ver detalle completo en DECISION-002 y DECISION-003.
 
 ## Próximo paso
 
-1. Implementar Auth basico local: login/logout con Supabase Auth magic link (no remoto aun).
+1. Auth implementado: email + password como flujo principal (DECISION-007). Magic link como fallback.
 2. Entrevistar 3–5 productores con DISCOVERY_QUESTIONS.md.
 3. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox.
 4. Diseñar y enviar templates HSM a Meta (aprobación tarda 1–7 días hábiles).
