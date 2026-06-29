@@ -159,8 +159,28 @@ export default async function ApprovalsPage() {
         </span>
       </nav>
 
-      {/* Link rapido al outbox — siguiente paso despues de aprobar */}
-      <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'flex-end' }}>
+      {/*
+       * Links rapidos al scheduler y al outbox.
+       * El scheduler es el paso ANTERIOR (mueve quotes a scheduled).
+       * El outbox es el paso POSTERIOR (envia el mensaje aprobado).
+       * Las cotizaciones llegan aqui desde /dashboard/scheduler o desde /quotes/new.
+       */}
+      <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <Link
+          href="/dashboard/scheduler"
+          style={{
+            padding: '0.4rem 0.9rem',
+            background: '#f5f3ff',
+            color: '#7c3aed',
+            border: '1px solid #c4b5fd',
+            borderRadius: '6px',
+            fontSize: '0.82rem',
+            fontWeight: 600,
+            textDecoration: 'none',
+          }}
+        >
+          ← Scheduler local
+        </Link>
         <Link
           href="/dashboard/outbox"
           style={{

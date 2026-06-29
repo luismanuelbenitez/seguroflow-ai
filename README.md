@@ -317,6 +317,49 @@ Ver: `docs/05-architecture/DATA_MODEL.md` — sección "Relación flujo-modelo d
 
 ---
 
+## Scheduler local manual
+
+La pantalla `/dashboard/scheduler` simula el cron/job de produccion que detecta cotizaciones pendientes de seguimiento y las mueve al estado `scheduled`. **No envía mensajes por WhatsApp. No usa IA. No usa datos reales.**
+
+**Prerequisitos:**
+- Login local con magic link (Mailpit: `http://localhost:54324`)
+- Al menos una cotizacion con `status = 'pending_follow_up'` (creada desde `/quotes/new`)
+
+**Flujo completo:**
+
+```
+/quotes/new      → crear cotizacion manual
+  ↓ (status: pending_follow_up)
+/scheduler       → ver candidata, clic "Ejecutar scheduler local"
+  ↓ (status: scheduled)
+/approvals       → aparece en la cola — aprobar mensaje M1
+  ↓ (status: pending_approval)
+/outbox          → simular envio
+  ↓ (status: contacted)
+/quotes/[id]     → simular respuesta, ver timeline completo
+```
+
+**Que hace "Ejecutar scheduler local":**
+1. Busca quotes del producer en `status = 'pending_follow_up'`
+2. Excluye prospects con `opt_out = true` (bloqueadas — se muestran separadas en la UI)
+3. Batch UPDATE de `quotes.status`: `pending_follow_up` → `scheduled`
+4. Batch INSERT de `quote_events`: `event_type='follow_up_scheduled'`, `actor='system'`, visible en el timeline
+
+**GAP documentado:**
+La columna `follow_up_start_at` (TIMESTAMPTZ nullable) existe en el schema pero no se setea en el MVP local. En produccion, el scheduler solo procesaria quotes cuyo `follow_up_start_at <= NOW()`. Por ahora, toda quote en `pending_follow_up` es elegible.
+
+**Quotes bloqueadas por opt-out:**
+Se muestran en una seccion separada con badge rojo. El scheduler NO las procesa. El producer debe cerrarlas manualmente (`closed_lost` o `cancelled`) desde el timeline.
+
+**Lo que NO hace:**
+- No envía mensajes por WhatsApp
+- No integra IA
+- No usa datos reales
+- No aplica migraciones remotas (`supabase db push`)
+- No usa service role key
+
+---
+
 ## Simulacion local de respuestas inbound
 
 Desde el timeline de una cotizacion (`/dashboard/quotes/[quoteId]`), el producer puede simular que el prospecto respondio por WhatsApp. **No recibe ningun mensaje real. No usa IA. No usa datos reales.**

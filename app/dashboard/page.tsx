@@ -169,6 +169,50 @@ export default async function DashboardPage() {
           </section>
 
           {/*
+           * Acceso rapido: Scheduler local.
+           * Simula el cron/job de produccion que detecta cotizaciones pendientes
+           * y las mueve a 'scheduled'. NO envia WhatsApp. NO usa IA.
+           * Las quotes procesadas aparecen en la cola de aprobacion.
+           */}
+          <section
+            style={{
+              background: '#fff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              padding: '1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1rem',
+            }}
+          >
+            <div>
+              <p style={{ margin: '0 0 0.25rem', fontWeight: 600, color: '#374151', fontSize: '0.9rem' }}>
+                Scheduler local
+              </p>
+              <p style={{ margin: 0, color: '#6b7280', fontSize: '0.82rem' }}>
+                Mueve cotizaciones a estado seguimiento — simula un cron
+              </p>
+            </div>
+            <Link
+              href="/dashboard/scheduler"
+              style={{
+                display: 'inline-block',
+                padding: '0.5rem 1rem',
+                background: '#7c3aed',
+                color: '#fff',
+                borderRadius: '6px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              Scheduler local
+            </Link>
+          </section>
+
+          {/*
            * Acceso rapido: Outbox local simulado.
            * Muestra mensajes aprobados en 'pending_approval' listos para
            * simular el envio. NO envia WhatsApp real.
@@ -252,6 +296,7 @@ export default async function DashboardPage() {
           <li>✅ Cola de aprobacion local en /dashboard/approvals</li>
           <li>✅ Outbox local simulado en /dashboard/outbox</li>
           <li>✅ Simulacion de respuestas inbound en /dashboard/quotes/[quoteId]</li>
+          <li>✅ Scheduler local manual en /dashboard/scheduler</li>
           <li>Ver prospectos del producer (tabla <code>prospects</code>)</li>
           <li>Panel de handoffs pendientes (tabla <code>human_handoffs</code>)</li>
           <li>Integracion WhatsApp sandbox (Twilio) para mensajes de seguimiento</li>

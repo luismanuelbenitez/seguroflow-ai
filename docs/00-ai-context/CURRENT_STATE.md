@@ -297,7 +297,46 @@
         - IA real: NO integrada
         - db push: NO ejecutado
         - TuHoroscopoCosmico.com: NO tocado
-   23. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
+✅ 23. Scheduler local manual: /dashboard/scheduler
+        - lib/scheduler/get-local-scheduler-preview.ts: 2 queries (quotes status=pending_follow_up,
+          luego prospects). Separa candidates (opt_out=false) de blockedByOptOut (opt_out=true).
+          GAP documentado: follow_up_start_at existe en schema pero es null en MVP local.
+          Por ahora: toda quote en pending_follow_up es elegible (sin filtro de fecha).
+          En produccion se agregaria: follow_up_start_at <= NOW().
+        - app/actions/scheduler.ts: runLocalScheduler() — Server Action con useActionState
+          Paso 5a: Batch UPDATE quotes.status 'pending_follow_up' → 'scheduled'
+            Filtro adicional: .eq('status', eligible) para prevenir race conditions
+            Patron (supabase.from('quotes') as any).update() — identico a outbox/approvals
+          Paso 5b: Batch INSERT quote_events — Supabase soporta array en .insert()
+            event_type='follow_up_scheduled', actor='system' (cron semantico)
+            previous='pending_follow_up', new='scheduled'
+            description='Scheduler local simulo que la cotizacion quedo lista...'
+          Si batch events INSERT falla: degradacion elegante (quotes ya actualizadas)
+          Retorna SchedulerResult: { ran, processedCount, skippedOptOutCount, errorIds }
+          NO hace redirect — muestra resultado inline con RunSchedulerButton
+        - components/dashboard/run-scheduler-button.tsx: Client Component con useActionState
+          Muestra resumen de resultado inline (processedCount, skippedCount)
+          Links post-ejecucion: 'Ver cola de aprobacion' + 'Recargar scheduler'
+          NO hace redirect para preservar el resumen visible
+        - app/dashboard/scheduler/page.tsx: Server Component, auth guard
+          Lista candidatas con: nombre, telefono, tipo, status, fecha creacion, follow_up_start_at
+          Seccion separada para blockedByOptOut con aviso rojo
+          Link 'Timeline →' por candidata
+          RunSchedulerButton al final con aviso MVP visible
+          Nota tecnica al pie: GAP follow_up_start_at, futura M2 con no_response_1
+        - app/dashboard/page.tsx: seccion 'Scheduler local' con link violeta, item en lista ✅
+        - app/dashboard/approvals/page.tsx: link '← Scheduler local' en navegacion
+          (Las quotes llegan a approvals desde scheduler → el link contextualiza el flujo)
+        - README.md: seccion 'Scheduler local manual' con flujo, GAP, que hace/no hace
+        - npm run build: exitoso (13 rutas, /dashboard/scheduler incluido)
+        - WhatsApp real: NO integrado
+        - IA real: NO integrada
+        - db push: NO ejecutado
+        - TuHoroscopoCosmico.com: NO tocado
+   24. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
+   25. Pantalla de metricas basicas: quotes por status, tasa de respuesta, opt-outs
+   26. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
+   27. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
    24. Cron/scheduler local para detectar quotes en pending_follow_up y moverlas a scheduled
        (simular el paso automatico del tiempo sin integrar WABA ni IA)
    25. Pantalla de metricas basicas: quotes por status, conversion rate, opt-outs totales
