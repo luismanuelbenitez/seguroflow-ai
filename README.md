@@ -545,6 +545,33 @@ Ver reglas completas: `docs/00-ai-context/SUPABASE_SAFETY_RULES.md`
 
 ---
 
+## Demo comercial local
+
+Para mostrar el MVP a un productor piloto, seguir este orden:
+
+1. **Login** — magic link a `demo@seguroflow.local` (Mailpit: `http://localhost:54324`)
+2. **Dashboard** — presentar `/dashboard`: tagline comercial, flujo del MVP visible, acceso rápido
+3. **Nueva cotización** — ir a `/dashboard/quotes/new`, cargar un prospecto ficticio (nombre, teléfono, tipo de seguro)
+4. **Scheduler** — ir a `/dashboard/scheduler`, ejecutar "Ejecutar scheduler local" → la cotización pasa a `scheduled`
+5. **Cola de aprobación** — ir a `/dashboard/approvals`, ver el mensaje M1 generado, editarlo si se quiere, aprobar
+6. **Outbox** — ir a `/dashboard/outbox`, hacer clic en "Simular envío" → la cotización pasa a `contacted`
+7. **Timeline** — ir a `/dashboard/quotes/[id]`, ver el historial completo de eventos del prospecto
+8. **Respuesta inbound** — desde el timeline, simular una respuesta (interesado / con duda / no interesado / opt-out)
+9. **Métricas** — ir a `/dashboard/metrics`, ver conteos por estado, tasa de respuesta y tasa de interés
+
+**Puntos de conversación clave durante la demo:**
+- Mostrar que el mensaje M1 es personalizado con datos reales de la cotización
+- Mostrar que el opt-out bloquea inmediatamente todos los pasos del flujo
+- Mostrar el timeline acumulativo de todos los eventos
+- Mostrar las métricas: tasa de respuesta e interés
+
+**Importante:** Aclarar siempre que esto es un MVP local de validacion:
+- No envía WhatsApp real (eso viene en M2 con Twilio sandbox)
+- No usa IA real (eso viene en M3 con clasificacion de respuestas)
+- No usa datos reales de prospectos (todos son ficticios)
+
+---
+
 ## Documentacion
 
 Ver `docs/README.md` para el indice completo de documentacion.

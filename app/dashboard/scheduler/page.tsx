@@ -5,6 +5,8 @@ import { getLocalSchedulerPreview } from '@/lib/scheduler/get-local-scheduler-pr
 import { formatQuoteStatus, formatInsuranceType } from '@/lib/quotes/get-quotes-for-current-producer'
 import DashboardShell from '@/components/dashboard/dashboard-shell'
 import RunSchedulerButton from '@/components/dashboard/run-scheduler-button'
+import PageHeader from '@/components/ui/page-header'
+import DemoDisclaimer from '@/components/ui/demo-disclaimer'
 import type { SchedulerCandidate } from '@/lib/scheduler/get-local-scheduler-preview'
 
 /*
@@ -98,87 +100,21 @@ export default async function SchedulerPage() {
 
   return (
     <DashboardShell userEmail={ctx.user.email ?? ''}>
-      {/* Breadcrumb */}
-      <nav
-        style={{
-          marginBottom: '1.25rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          fontSize: '0.82rem',
-          color: '#9ca3af',
-        }}
-        aria-label="Breadcrumb"
-      >
-        <Link href="/dashboard" style={{ color: '#6b7280', textDecoration: 'none' }}>
-          Dashboard
-        </Link>
-        <span aria-hidden>›</span>
-        <span style={{ color: '#374151', fontWeight: 600 }}>Scheduler local</span>
-      </nav>
 
-      {/* Encabezado */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ margin: '0 0 0.35rem', fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
-          Scheduler local
-        </h1>
-        <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5 }}>
-          Simula el cron/job de produccion que detecta cotizaciones pendientes de seguimiento
-          y las mueve al estado <code>scheduled</code> para que aparezcan en la cola de aprobacion.
-        </p>
-      </div>
+      <DemoDisclaimer message="Scheduler local: simula el cron/job de produccion. No envía WhatsApp real ni usa IA." />
 
-      {/* Links de navegacion */}
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-        <Link
-          href="/dashboard/approvals"
-          style={{
-            display: 'inline-block',
-            padding: '0.3rem 0.75rem',
-            background: '#f0fdf4',
-            color: '#059669',
-            border: '1px solid #6ee7b7',
-            borderRadius: '5px',
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            textDecoration: 'none',
-          }}
-        >
-          Cola de aprobacion →
-        </Link>
-        <Link
-          href="/dashboard/quotes"
-          style={{
-            display: 'inline-block',
-            padding: '0.3rem 0.75rem',
-            background: '#eff6ff',
-            color: '#2563eb',
-            border: '1px solid #93c5fd',
-            borderRadius: '5px',
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            textDecoration: 'none',
-          }}
-        >
-          Lista de cotizaciones →
-        </Link>
-        <Link
-          href="/dashboard/quotes/new"
-          style={{
-            display: 'inline-block',
-            padding: '0.3rem 0.75rem',
-            background: '#f8fafc',
-            color: '#64748b',
-            border: '1px solid #cbd5e1',
-            borderRadius: '5px',
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            textDecoration: 'none',
-          }}
-        >
-          + Nueva cotizacion
-        </Link>
-      </div>
+      <PageHeader
+        breadcrumb={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Scheduler local' }]}
+        title="Scheduler local"
+        subtitle="Mueve cotizaciones de pending_follow_up → scheduled para que aparezcan en la cola de aprobacion."
+        actions={
+          <>
+            <Link href="/dashboard/approvals" style={{ fontSize: '0.82rem', color: '#059669', textDecoration: 'none', fontWeight: 600 }}>Aprobacion →</Link>
+            <Link href="/dashboard/quotes" style={{ fontSize: '0.82rem', color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}>Cotizaciones →</Link>
+            <Link href="/dashboard/quotes/new" style={{ fontSize: '0.82rem', color: '#64748b', textDecoration: 'none', fontWeight: 600 }}>+ Nueva →</Link>
+          </>
+        }
+      />
 
       {/* Error de carga del preview */}
       {preview.error && (

@@ -10,8 +10,8 @@
 
 ## Estado general
 
-**Fase:** MVP local fase 1 completo. Flujo completo simulado + métricas básicas implementadas.
-**Progreso:** Flujo local completo: /quotes/new → /scheduler → /approvals → /outbox → /quotes/[id] (inbound) → /metrics. Sin WhatsApp real. Sin IA. Sin migraciones. supabase db push sigue prohibido. TuHoroscopoCosmico.com sigue prohibido.
+**Fase:** MVP local fase 1 completo + UX de demo comercial implementada.
+**Progreso:** Flujo completo simulado + métricas + polish visual para demo comercial. Listo para mostrar a productor piloto. Sin WhatsApp real. Sin IA. Sin migraciones. supabase db push sigue prohibido. TuHoroscopoCosmico.com sigue prohibido.
 
 **Usuario demo local:** demo@seguroflow.local (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1 — valido solo en la DB local actual)
 
@@ -333,6 +333,25 @@
         - IA real: NO integrada
         - db push: NO ejecutado
         - TuHoroscopoCosmico.com: NO tocado
+✅ 25. UX de demo comercial — polish visual de todas las pantallas del dashboard
+        - components/dashboard/dashboard-shell.tsx: header oscuro + sub-nav con 6 secciones
+          Fondo #0f172a + logo "SF" en azul + nav bar con links a todas las rutas
+          Max-width aumentado a 960px. Sin librerías adicionales.
+        - components/ui/page-header.tsx: breadcrumb + titulo + subtitulo + slot de acciones
+        - components/ui/demo-disclaimer.tsx: banner de disclaimer (info/warning) reutilizable
+        - components/ui/section-card.tsx: card con header opcional + acento de color
+        - components/ui/empty-state.tsx: estado vacio con CTA + links secundarios
+        - app/dashboard/page.tsx: reescritura como home del producto
+          Hero gradient con producto + tagline + badges MVP/activo
+          Diagrama visual del flujo (6 pasos como pills clickeables)
+          Grid de 6 quick-action cards con color por sección
+          Status del MVP (checklist sin las pendientes que confunden en la demo)
+        - /dashboard/quotes, /scheduler, /approvals, /outbox, /metrics, /quotes/[id]:
+          PageHeader + DemoDisclaimer en todas las paginas
+          Links de navegacion contextuales en cada header (anterior/siguiente en el flujo)
+        - README.md: seccion "Demo comercial local" con flujo de 9 pasos y puntos clave
+        - npm run build: pendiente
+        - db push: NO ejecutado — TuHoroscopoCosmico.com: NO tocado
 ✅ 24. Métricas locales del MVP: /dashboard/metrics
         - lib/metrics/get-basic-dashboard-metrics.ts: helper server-side con 5 queries en paralelo (Promise.all)
             1. quotes: todos los del producer (id, status) → conteo en memoria con Map<QuoteStatus, number>
@@ -361,11 +380,11 @@
         - IA real: NO integrada
         - db push: NO ejecutado
         - TuHoroscopoCosmico.com: NO tocado
-   25. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md (discovery para validacion comercial)
-   26. Mejorar UX visual del dashboard para demo comercial (sin datos reales)
-   27. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
-   28. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
-   29. Checklist pre-piloto: productor real, consentimiento LPDP Uruguay, sandbox WABA
+   26. Entrevistar 3-5 productores (discovery para validacion comercial) → DISCOVERY_QUESTIONS.md
+   27. Documentar plan de integracion WhatsApp real (Twilio sandbox) → docs/06-roadmap/M2-WHATSAPP.md
+   28. Crear cuentas cloud: Supabase proyecto + Anthropic API + Twilio sandbox
+   29. Disenar y enviar templates HSM a Meta (aprobacion tarda 1-7 dias habiles)
+   30. Checklist pre-piloto: productor real, consentimiento LPDP Uruguay 18.331, sandbox WABA
 ```
 
 ---

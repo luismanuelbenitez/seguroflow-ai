@@ -3,360 +3,344 @@ import Link from 'next/link'
 import { getCurrentProducerContext } from '@/lib/producers/get-current-producer-context'
 import DashboardShell from '@/components/dashboard/dashboard-shell'
 import ProducerSummaryCard from '@/components/dashboard/producer-summary-card'
+import DemoDisclaimer from '@/components/ui/demo-disclaimer'
 
 /*
- * INTENCION: Dashboard del producer — ruta protegida del MVP.
- * Verifica la sesion, obtiene el contexto del producer y renderiza el dashboard.
+ * INTENCION: Dashboard principal — home del producto para el producer.
+ * Muestra la propuesta de valor, acceso rápido a todas las secciones del flujo
+ * y el estado del producer activo.
  *
- * POR QUE SERVER COMPONENT (sin 'use client'):
- *   - Toda la logica de auth y fetch ocurre en el servidor, antes de enviar HTML.
- *   - El redirect a /login ocurre en el servidor: el browser nunca ve datos protegidos.
- *   - Puede usar async/await directamente sin useEffect ni fetch del cliente.
+ * CAMBIOS DE UX (demo comercial):
+ *   - Hero con nombre del producto + tagline comercial.
+ *   - 6 cards de acceso rapido organizados en grid.
+ *   - Bloque visual del flujo MVP: Cotizacion → Scheduler → Aprobacion → Outbox → Respuesta → Metricas.
+ *   - Disclaimer claro de demo local.
+ *   - Checklist de funcionalidades activas (sin las pendientes que confunden en la demo).
  *
- * FLUJO DE ESTE COMPONENTE:
- *   1. getCurrentProducerContext() obtiene usuario + producer en una sola query.
- *   2. Si no hay sesion → redirect al login.
- *   3. Si hay sesion pero no hay producer → DashboardShell + ProducerSummaryCard (estado vacio).
- *   4. Si hay sesion y producer → DashboardShell + ProducerSummaryCard (con datos).
+ * FLUJO:
+ *   1. getCurrentProducerContext() valida sesion + obtiene producer.
+ *   2. Si no hay sesion → redirect a /login.
+ *   3. Si no hay producer → mostrar ProducerSummaryCard en estado vacio.
+ *   4. Si hay producer → hero + quick access cards + flow diagram.
  *
- * ESTADO ACTUAL (MVP fase 2 — local):
- *   - Verifica sesion con getUser() (no getSession()) — seguro.
- *   - Verifica membresia en producer_members.
- *   - Muestra estado vacio con instrucciones si no hay producer.
- *   - NO consulta quotes, prospects ni otras tablas de negocio todavia.
+ * SEGURIDAD:
+ *   - getUser() server-side — valida JWT real.
+ *   - No consulta quotes ni prospects aqui (se hace en cada sub-pagina).
+ *   - No usa service role.
  *
- * PROXIMAS ITERACIONES:
- *   - Mostrar resumen de quotes en seguimiento (quotes WHERE status NOT IN terminal).
- *   - Mostrar handoffs pendientes (human_handoffs WHERE status = 'pending').
- *   - Agregar navegacion: /dashboard/quotes, /dashboard/prospects.
- *
- * Ver: lib/producers/get-current-producer-context.ts (logica de auth + producer)
- * Ver: docs/02-mvp/MVP-01-recuperador-cotizaciones.md (spec del modulo)
- * Ver: docs/02-product/USER_FLOWS.md (Flujo 1: Producer accede al dashboard)
+ * Ver: lib/producers/get-current-producer-context.ts
+ * Ver: components/dashboard/producer-summary-card.tsx
  */
+
+// ─────────────────────────────────────────────
+// Quick action cards: config de las 6 secciones
+// ─────────────────────────────────────────────
+
+const QUICK_ACTIONS = [
+  {
+    href: '/dashboard/quotes/new',
+    label: '+ Nueva cotizacion',
+    description: 'Cargar un prospecto y cotizacion manualmente',
+    color: '#2563eb',
+    bg: '#eff6ff',
+    border: '#bfdbfe',
+  },
+  {
+    href: '/dashboard/scheduler',
+    label: 'Scheduler local',
+    description: 'Mover cotizaciones pendientes a seguimiento',
+    color: '#7c3aed',
+    bg: '#f5f3ff',
+    border: '#ddd6fe',
+  },
+  {
+    href: '/dashboard/approvals',
+    label: 'Cola de aprobacion',
+    description: 'Revisar y aprobar mensajes M1 antes de enviar',
+    color: '#059669',
+    bg: '#f0fdf4',
+    border: '#a7f3d0',
+  },
+  {
+    href: '/dashboard/outbox',
+    label: 'Outbox local',
+    description: 'Simular el envio de mensajes aprobados',
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+  },
+  {
+    href: '/dashboard/quotes',
+    label: 'Cotizaciones',
+    description: 'Ver todas las cotizaciones y sus estados',
+    color: '#0891b2',
+    bg: '#ecfeff',
+    border: '#a5f3fc',
+  },
+  {
+    href: '/dashboard/metrics',
+    label: 'Metricas locales',
+    description: 'Estado del flujo: volumen, embudo y tasas',
+    color: '#0891b2',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+  },
+]
+
+// Etapas del flujo MVP para el diagrama visual
+const FLOW_STEPS = [
+  { label: 'Cotizacion', href: '/dashboard/quotes/new', color: '#2563eb' },
+  { label: 'Scheduler', href: '/dashboard/scheduler', color: '#7c3aed' },
+  { label: 'Aprobacion', href: '/dashboard/approvals', color: '#059669' },
+  { label: 'Outbox', href: '/dashboard/outbox', color: '#d97706' },
+  { label: 'Respuesta', href: '/dashboard/quotes', color: '#0891b2' },
+  { label: 'Metricas', href: '/dashboard/metrics', color: '#475569' },
+]
+
 export default async function DashboardPage() {
-  /*
-   * getCurrentProducerContext() hace dos cosas en una sola funcion:
-   *   1. Valida la sesion con supabase.auth.getUser() (validacion server-side).
-   *   2. Consulta producer_members + producers en una query con JOIN.
-   *
-   * Retorna un discriminated union: ProducerContextUnauthenticated | ProducerContextSuccess.
-   */
   const ctx = await getCurrentProducerContext()
 
-  /*
-   * SEGURIDAD: Si no hay sesion, redirigir al login ANTES de renderizar cualquier cosa.
-   * TypeScript estrecha el tipo: despues de este if, ctx.user es siempre non-null.
-   */
   if (ctx.error === 'unauthenticated') {
     redirect('/login')
   }
 
-  /*
-   * A partir de aqui, TypeScript sabe que ctx es ProducerContextSuccess.
-   * ctx.user es User (non-null). ctx.producer puede ser null (sin producer asociado).
-   *
-   * PRIVACIDAD: ctx.user.email es PII. Se pasa a DashboardShell para mostrarlo
-   * al propio usuario. No loguear ni enviar a servicios de monitoreo.
-   */
+  const producerName = ctx.producer?.name ?? null
+
   return (
     <DashboardShell userEmail={ctx.user.email ?? ''}>
-      <h1
+
+      {/* ── Disclaimer demo ──────────────────────────────────────────────── */}
+      <DemoDisclaimer />
+
+      {/* ── Hero section ────────────────────────────────────────────────── */}
+      <div
         style={{
-          fontSize: '1.25rem',
-          fontWeight: 700,
-          color: '#0f172a',
-          margin: '0 0 1.5rem',
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)',
+          borderRadius: '12px',
+          padding: '2rem 2.25rem',
+          marginBottom: '1.5rem',
+          color: '#fff',
         }}
       >
-        Dashboard
-      </h1>
-
-      {/*
-       * ProducerSummaryCard muestra:
-       *   - Datos del producer si hasProducer: true.
-       *   - Mensaje de estado vacio si hasProducer: false.
-       */}
-      <ProducerSummaryCard context={ctx} />
-
-      {/*
-       * Acceso rapido a cotizaciones: link a /dashboard/quotes.
-       * Solo se muestra si el usuario tiene un producer asociado.
-       * Si no tiene producer, el usuario ya ve el estado vacio en ProducerSummaryCard.
-       */}
-      {ctx.hasProducer && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {/* Acceso rapido: Cotizaciones */}
-          <section
-            style={{
-              background: '#fff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              padding: '1.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '1rem',
-            }}
-          >
-            <div>
-              <p style={{ margin: '0 0 0.25rem', fontWeight: 600, color: '#374151', fontSize: '0.9rem' }}>
-                Cotizaciones
-              </p>
-              <p style={{ margin: 0, color: '#6b7280', fontSize: '0.82rem' }}>
-                Lista de cotizaciones en seguimiento del producer
-              </p>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+              <span
+                style={{
+                  background: '#2563eb',
+                  borderRadius: '6px',
+                  padding: '0.2rem 0.55rem',
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  color: '#fff',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                MVP Local
+              </span>
+              <span
+                style={{
+                  background: '#065f46',
+                  borderRadius: '6px',
+                  padding: '0.2rem 0.55rem',
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  color: '#6ee7b7',
+                  letterSpacing: '0.05em',
+                }}
+              >
+                Flujo completo activo
+              </span>
             </div>
-            <Link
-              href="/dashboard/quotes"
+            <h1
               style={{
-                display: 'inline-block',
-                padding: '0.5rem 1rem',
-                background: '#2563eb',
-                color: '#fff',
-                borderRadius: '6px',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                textDecoration: 'none',
+                margin: '0 0 0.4rem',
+                fontSize: '1.6rem',
+                fontWeight: 800,
+                color: '#f8fafc',
+                letterSpacing: '-0.03em',
+                lineHeight: 1.2,
               }}
             >
-              Ver cotizaciones
-            </Link>
-          </section>
-
-          {/*
-           * Acceso rapido: Cola de aprobacion.
-           * Muestra cotizaciones en pending_follow_up / scheduled / pending_approval
-           * listas para que el producer apruebe el mensaje M1 antes de enviarlo.
-           */}
-          <section
-            style={{
-              background: '#fff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              padding: '1.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '1rem',
-            }}
-          >
-            <div>
-              <p style={{ margin: '0 0 0.25rem', fontWeight: 600, color: '#374151', fontSize: '0.9rem' }}>
-                Cola de aprobacion
-              </p>
-              <p style={{ margin: 0, color: '#6b7280', fontSize: '0.82rem' }}>
-                Revisa y aprueba los mensajes M1 de seguimiento antes de enviarlos
-              </p>
-            </div>
-            <Link
-              href="/dashboard/approvals"
+              SeguroFlow AI
+            </h1>
+            <p
               style={{
-                display: 'inline-block',
-                padding: '0.5rem 1rem',
-                background: '#059669',
-                color: '#fff',
-                borderRadius: '6px',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                textDecoration: 'none',
+                margin: 0,
+                fontSize: '0.95rem',
+                color: '#94a3b8',
+                lineHeight: 1.5,
+                maxWidth: '480px',
               }}
             >
-              Cola de aprobacion
-            </Link>
-          </section>
+              Recuperá cotizaciones no cerradas con seguimiento asistido por WhatsApp.
+              Automatizá el primer contacto y medí la respuesta de tus prospectos.
+            </p>
+          </div>
 
-          {/*
-           * Acceso rapido: Scheduler local.
-           * Simula el cron/job de produccion que detecta cotizaciones pendientes
-           * y las mueve a 'scheduled'. NO envia WhatsApp. NO usa IA.
-           * Las quotes procesadas aparecen en la cola de aprobacion.
-           */}
-          <section
-            style={{
-              background: '#fff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              padding: '1.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '1rem',
-            }}
-          >
-            <div>
-              <p style={{ margin: '0 0 0.25rem', fontWeight: 600, color: '#374151', fontSize: '0.9rem' }}>
-                Scheduler local
-              </p>
-              <p style={{ margin: 0, color: '#6b7280', fontSize: '0.82rem' }}>
-                Mueve cotizaciones a estado seguimiento — simula un cron
-              </p>
-            </div>
-            <Link
-              href="/dashboard/scheduler"
+          {/* Estado del producer */}
+          {ctx.hasProducer && producerName && (
+            <div
               style={{
-                display: 'inline-block',
-                padding: '0.5rem 1rem',
-                background: '#7c3aed',
-                color: '#fff',
-                borderRadius: '6px',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                textDecoration: 'none',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: '8px',
+                padding: '0.75rem 1rem',
+                minWidth: '160px',
               }}
             >
-              Scheduler local
-            </Link>
-          </section>
-
-          {/*
-           * Acceso rapido: Outbox local simulado.
-           * Muestra mensajes aprobados en 'pending_approval' listos para
-           * simular el envio. NO envia WhatsApp real.
-           * El producer hace clic en "Simular envio" para registrar localmente
-           * que el mensaje habria sido enviado y ver el evento en el timeline.
-           */}
-          <section
-            style={{
-              background: '#fff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              padding: '1.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '1rem',
-            }}
-          >
-            <div>
-              <p style={{ margin: '0 0 0.25rem', fontWeight: 600, color: '#374151', fontSize: '0.9rem' }}>
-                Outbox local
+              <p style={{ margin: '0 0 0.2rem', fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Producer activo
               </p>
-              <p style={{ margin: 0, color: '#6b7280', fontSize: '0.82rem' }}>
-                Simula el envio de mensajes aprobados — sin WhatsApp real
+              <p style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#f1f5f9' }}>
+                {producerName}
               </p>
             </div>
-            <Link
-              href="/dashboard/outbox"
-              style={{
-                display: 'inline-block',
-                padding: '0.5rem 1rem',
-                background: '#d97706',
-                color: '#fff',
-                borderRadius: '6px',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                textDecoration: 'none',
-              }}
-            >
-              Outbox local
-            </Link>
-          </section>
-
-          {/*
-           * Acceso rapido: Métricas locales.
-           * Vista de estado del flujo simulado: volumen de cotizaciones por estado,
-           * embudo de contacto, tasas de respuesta e interés, actividad reciente.
-           * No usa WhatsApp real. No usa IA. Solo datos locales del producer.
-           */}
-          <section
-            style={{
-              background: '#fff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              padding: '1.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '1rem',
-            }}
-          >
-            <div>
-              <p style={{ margin: '0 0 0.25rem', fontWeight: 600, color: '#374151', fontSize: '0.9rem' }}>
-                Métricas locales
-              </p>
-              <p style={{ margin: 0, color: '#6b7280', fontSize: '0.82rem' }}>
-                Estado del flujo: volumen, embudo, tasas de respuesta e interés
-              </p>
-            </div>
-            <Link
-              href="/dashboard/metrics"
-              style={{
-                display: 'inline-block',
-                padding: '0.5rem 1rem',
-                background: '#0891b2',
-                color: '#fff',
-                borderRadius: '6px',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                textDecoration: 'none',
-              }}
-            >
-              Ver métricas
-            </Link>
-          </section>
+          )}
         </div>
-      )}
+      </div>
 
-      {/*
-       * Seccion de proximos pasos del MVP.
-       * Se muestra siempre, independientemente de si hay producer.
-       * Sirve como roadmap visual para el equipo de desarrollo.
-       */}
-      <section
+      {/* ── Flujo del MVP (diagrama visual) ─────────────────────────────── */}
+      <div
         style={{
           background: '#fff',
           border: '1px solid #e2e8f0',
-          borderRadius: '8px',
-          padding: '1.25rem',
+          borderRadius: '10px',
+          padding: '1rem 1.25rem',
+          marginBottom: '1.5rem',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
         }}
       >
-        <p
-          style={{
-            margin: 0,
-            fontWeight: 600,
-            color: '#374151',
-            fontSize: '0.9rem',
-          }}
-        >
-          Proximas funcionalidades del MVP
+        <p style={{ margin: '0 0 0.75rem', fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Flujo del MVP
         </p>
-        <ul
+        <div
           style={{
-            marginTop: '0.75rem',
-            paddingLeft: '1.25rem',
-            color: '#6b7280',
-            lineHeight: 1.7,
-            fontSize: '0.88rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.3rem',
+            flexWrap: 'wrap',
           }}
         >
-          <li>✅ Listar cotizaciones demo en /dashboard/quotes</li>
-          <li>✅ Carga manual de cotizaciones en /dashboard/quotes/new</li>
-          <li>✅ Cola de aprobacion local en /dashboard/approvals</li>
-          <li>✅ Outbox local simulado en /dashboard/outbox</li>
-          <li>✅ Simulacion de respuestas inbound en /dashboard/quotes/[quoteId]</li>
-          <li>✅ Scheduler local manual en /dashboard/scheduler</li>
-          <li>✅ Métricas locales en /dashboard/metrics</li>
-          <li>Ver prospectos del producer (tabla <code>prospects</code>)</li>
-          <li>Panel de handoffs pendientes (tabla <code>human_handoffs</code>)</li>
-          <li>Integracion WhatsApp sandbox (Twilio) para mensajes de seguimiento</li>
+          {FLOW_STEPS.map((step, idx) => (
+            <div key={step.href} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <Link
+                href={step.href}
+                style={{
+                  display: 'inline-block',
+                  padding: '0.3rem 0.7rem',
+                  background: `${step.color}18`,
+                  color: step.color,
+                  borderRadius: '6px',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  border: `1px solid ${step.color}30`,
+                }}
+              >
+                {step.label}
+              </Link>
+              {idx < FLOW_STEPS.length - 1 && (
+                <span style={{ color: '#cbd5e1', fontSize: '0.9rem' }}>→</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Estado del producer (si no hay producer) ─────────────────────── */}
+      {!ctx.hasProducer && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <ProducerSummaryCard context={ctx} />
+        </div>
+      )}
+
+      {/* ── Quick access cards ───────────────────────────────────────────── */}
+      {ctx.hasProducer && (
+        <div>
+          <p style={{ margin: '0 0 0.75rem', fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Acceso rápido
+          </p>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))',
+              gap: '0.75rem',
+            }}
+          >
+            {QUICK_ACTIONS.map((action) => (
+              <Link
+                key={action.href}
+                href={action.href}
+                style={{ textDecoration: 'none' }}
+              >
+                <div
+                  style={{
+                    background: '#fff',
+                    border: `1px solid ${action.border}`,
+                    borderLeft: `4px solid ${action.color}`,
+                    borderRadius: '10px',
+                    padding: '1rem 1.1rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                    transition: 'box-shadow 0.15s',
+                  }}
+                >
+                  <p
+                    style={{
+                      margin: '0 0 0.25rem',
+                      fontWeight: 700,
+                      fontSize: '0.92rem',
+                      color: action.color,
+                    }}
+                  >
+                    {action.label}
+                  </p>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: '0.82rem',
+                      color: '#64748b',
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {action.description}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Proximas funcionalidades (minimalista, solo para el equipo) ─── */}
+      <div
+        style={{
+          marginTop: '1.75rem',
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          borderRadius: '8px',
+          padding: '1rem 1.25rem',
+        }}
+      >
+        <p style={{ margin: '0 0 0.6rem', fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          Estado del MVP local
+        </p>
+        <ul style={{ margin: 0, paddingLeft: '1.2rem', lineHeight: 1.8, fontSize: '0.82rem', color: '#64748b' }}>
+          <li>✅ Auth con magic link (Supabase)</li>
+          <li>✅ Ingesta manual de cotizaciones (/quotes/new)</li>
+          <li>✅ Scheduler local (/scheduler)</li>
+          <li>✅ Cola de aprobacion de mensajes M1 (/approvals)</li>
+          <li>✅ Outbox simulado (/outbox)</li>
+          <li>✅ Timeline de eventos por cotizacion (/quotes/[id])</li>
+          <li>✅ Simulacion de respuesta inbound (4 escenarios)</li>
+          <li>✅ Metricas locales del flujo (/metrics)</li>
+          <li style={{ color: '#94a3b8' }}>⬜ Integracion WhatsApp real (Twilio sandbox — M2)</li>
+          <li style={{ color: '#94a3b8' }}>⬜ IA para clasificacion de respuestas (M3)</li>
         </ul>
-        <p
-          style={{
-            marginTop: '0.75rem',
-            marginBottom: 0,
-            fontSize: '0.78rem',
-            color: '#9ca3af',
-          }}
-        >
-          Ver: <code>docs/02-mvp/MVP-01-recuperador-cotizaciones.md</code>
-        </p>
-      </section>
+      </div>
+
     </DashboardShell>
   )
 }

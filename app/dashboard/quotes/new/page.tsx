@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { getCurrentProducerContext } from '@/lib/producers/get-current-producer-context'
 import DashboardShell from '@/components/dashboard/dashboard-shell'
 import QuoteForm from '@/components/dashboard/quote-form'
+import PageHeader from '@/components/ui/page-header'
+import DemoDisclaimer from '@/components/ui/demo-disclaimer'
 
 /*
  * INTENCION: Pantalla de ingesta manual de cotizacion — ruta protegida.
@@ -103,46 +105,20 @@ export default async function NewQuotePage() {
   // ── Paso 2: Renderizar formulario ─────────────────────────────────────────
   return (
     <DashboardShell userEmail={ctx.user.email ?? ''}>
-      {/* Navegacion breadcrumb */}
-      <nav
-        style={{
-          marginBottom: '1.25rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          fontSize: '0.82rem',
-          color: '#9ca3af',
-        }}
-        aria-label="Breadcrumb"
-      >
-        <Link href="/dashboard" style={{ color: '#6b7280', textDecoration: 'none' }}>
-          Dashboard
-        </Link>
-        <span aria-hidden>›</span>
-        <Link href="/dashboard/quotes" style={{ color: '#6b7280', textDecoration: 'none' }}>
-          Cotizaciones
-        </Link>
-        <span aria-hidden>›</span>
-        <span style={{ color: '#374151', fontWeight: 600 }}>Nueva cotizacion</span>
-      </nav>
+      <DemoDisclaimer message="Demo local: los datos ingresados son ficticios. No se envía WhatsApp real ni se contacta ningún prospecto." />
 
-      {/* Encabezado */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1
-          style={{
-            margin: '0 0 0.25rem',
-            fontSize: '1.25rem',
-            fontWeight: 700,
-            color: '#0f172a',
-          }}
-        >
-          Nueva cotizacion
-        </h1>
-        <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
-          {ctx.producer?.name ?? 'Producer'} — rol:{' '}
-          <strong>{ctx.membership?.role ?? '—'}</strong>
-        </p>
-      </div>
+      <PageHeader
+        breadcrumb={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Cotizaciones', href: '/dashboard/quotes' },
+          { label: 'Nueva cotizacion' },
+        ]}
+        title="Nueva cotizacion"
+        subtitle={`${ctx.producer?.name ?? 'Producer'} · Carga un prospecto nuevo para iniciar el flujo de seguimiento.`}
+        actions={
+          <Link href="/dashboard/quotes" style={{ fontSize: '0.82rem', color: '#6b7280', textDecoration: 'none', fontWeight: 600 }}>← Todas las cotizaciones</Link>
+        }
+      />
 
       {/*
        * QuoteForm: Client Component que maneja useActionState y la interactividad.

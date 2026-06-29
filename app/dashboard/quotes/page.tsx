@@ -5,6 +5,8 @@ import { getQuotesForCurrentProducer } from '@/lib/quotes/get-quotes-for-current
 import DashboardShell from '@/components/dashboard/dashboard-shell'
 import QuotesList from '@/components/dashboard/quotes-list'
 import CreateDemoQuoteButton from '@/components/dashboard/create-demo-quote-button'
+import PageHeader from '@/components/ui/page-header'
+import DemoDisclaimer from '@/components/ui/demo-disclaimer'
 
 /*
  * INTENCION: Pantalla de cotizaciones del producer — ruta protegida.
@@ -123,131 +125,66 @@ export default async function QuotesPage() {
   // ── Renderizar dashboard de cotizaciones ─────────────────────────────────
   return (
     <DashboardShell userEmail={ctx.user.email ?? ''}>
-      {/* Navegacion breadcrumb simple */}
-      <nav
-        style={{
-          marginBottom: '1.25rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          fontSize: '0.82rem',
-          color: '#9ca3af',
-        }}
-        aria-label="Breadcrumb"
-      >
-        <Link href="/dashboard" style={{ color: '#6b7280', textDecoration: 'none' }}>
-          Dashboard
-        </Link>
-        <span aria-hidden>›</span>
-        <span style={{ color: '#374151', fontWeight: 600 }}>Cotizaciones</span>
-      </nav>
 
-      {/* Encabezado de la pagina */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          marginBottom: '1.5rem',
-          flexWrap: 'wrap',
-          gap: '1rem',
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              margin: '0 0 0.25rem',
-              fontSize: '1.25rem',
-              fontWeight: 700,
-              color: '#0f172a',
-            }}
-          >
-            Cotizaciones
-          </h1>
-          {/*
-           * Mostrar nombre del producer como contexto.
-           * El usuario siempre ve datos de su propio producer (garantia de RLS).
-           */}
-          <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
-            {ctx.producer?.name ?? 'Producer'} — rol:{' '}
-            <strong>{ctx.membership?.role ?? '—'}</strong>
-          </p>
-        </div>
+      <DemoDisclaimer />
 
-        {/* Acciones del encabezado */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-          {/*
-           * Boton principal: navega al formulario de ingesta manual.
-           * No requiere Client Component — es un link de navegacion simple.
-           */}
-          <Link
-            href="/dashboard/quotes/new"
-            style={{
-              display: 'inline-block',
-              padding: '0.5rem 1rem',
-              background: '#2563eb',
-              color: '#fff',
-              borderRadius: '6px',
-              fontSize: '0.88rem',
-              fontWeight: 600,
-              textDecoration: 'none',
-            }}
-          >
-            + Nueva cotizacion manual
-          </Link>
+      <PageHeader
+        breadcrumb={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Cotizaciones' }]}
+        title="Cotizaciones"
+        subtitle={`${ctx.producer?.name ?? 'Producer'} · Rol: ${ctx.membership?.role ?? '—'}`}
+        actions={
+          <>
+            {/* CTA principal: nueva cotizacion */}
+            <Link
+              href="/dashboard/quotes/new"
+              style={{
+                display: 'inline-block',
+                padding: '0.5rem 1.1rem',
+                background: '#2563eb',
+                color: '#fff',
+                borderRadius: '7px',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                textDecoration: 'none',
+              }}
+            >
+              + Nueva cotizacion
+            </Link>
+            {/* Links secundarios */}
+            <Link href="/dashboard/scheduler" style={{ fontSize: '0.82rem', color: '#7c3aed', textDecoration: 'none', fontWeight: 600 }}>
+              Scheduler →
+            </Link>
+            <Link href="/dashboard/approvals" style={{ fontSize: '0.82rem', color: '#059669', textDecoration: 'none', fontWeight: 600 }}>
+              Aprobacion →
+            </Link>
+            <Link href="/dashboard/metrics" style={{ fontSize: '0.82rem', color: '#0891b2', textDecoration: 'none', fontWeight: 600 }}>
+              Metricas →
+            </Link>
+          </>
+        }
+      />
 
-          {/*
-           * Acceso rapido a la cola de aprobacion desde la lista de cotizaciones.
-           * Separa el flujo de ver/crear cotizaciones del flujo de aprobar mensajes.
-           */}
-          <Link
-            href="/dashboard/approvals"
-            style={{
-              display: 'inline-block',
-              padding: '0.5rem 1rem',
-              background: '#059669',
-              color: '#fff',
-              borderRadius: '6px',
-              fontSize: '0.88rem',
-              fontWeight: 600,
-              textDecoration: 'none',
-            }}
-          >
-            Cola de aprobacion
-          </Link>
-
-          {/*
-           * Herramientas de desarrollo — separadas del flujo real.
-           * CreateDemoQuoteButton sigue disponible para seed rapido en local.
-           */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
-            <p style={{ margin: 0, fontSize: '0.72rem', color: '#9ca3af', fontWeight: 500 }}>
-              Solo desarrollo local:
-            </p>
-            <CreateDemoQuoteButton />
-          </div>
-        </div>
-      </div>
-
-      {/* Lista de cotizaciones — recibe el resultado ya fetched */}
+      {/* Lista de cotizaciones */}
       <QuotesList quotesResult={quotesResult} />
 
-      {/* Nota de contexto para el equipo de desarrollo */}
+      {/* Herramienta de seed local (solo para desarrollo) */}
       <div
         style={{
-          marginTop: '1.5rem',
-          padding: '0.75rem 1rem',
-          background: '#f0f9ff',
-          border: '1px solid #bae6fd',
+          marginTop: '1.25rem',
+          padding: '0.6rem 0.9rem',
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0',
           borderRadius: '6px',
-          fontSize: '0.78rem',
-          color: '#0369a1',
+          fontSize: '0.75rem',
+          color: '#94a3b8',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          flexWrap: 'wrap',
         }}
       >
-        <strong>Nota de desarrollo:</strong> Las cotizaciones demo no envian mensajes
-        WhatsApp ni activan ninguna automatizacion. Son exclusivamente para validar el
-        modelo de datos y el flujo del dashboard localmente.
-        Ver: <code>docs/05-architecture/LOCAL_SEEDING.md</code>
+        <span>Seed local:</span>
+        <CreateDemoQuoteButton />
       </div>
     </DashboardShell>
   )

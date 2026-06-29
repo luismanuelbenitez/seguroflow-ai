@@ -9,6 +9,8 @@ import {
 import DashboardShell from '@/components/dashboard/dashboard-shell'
 import ApprovalForm from '@/components/dashboard/approval-form'
 import { formatQuoteStatus, formatInsuranceType } from '@/lib/quotes/get-quotes-for-current-producer'
+import PageHeader from '@/components/ui/page-header'
+import DemoDisclaimer from '@/components/ui/demo-disclaimer'
 
 /*
  * INTENCION: Cola de aprobacion de mensajes de seguimiento — ruta protegida.
@@ -134,105 +136,20 @@ export default async function ApprovalsPage() {
   // ── Renderizar pagina ─────────────────────────────────────────────────────
   return (
     <DashboardShell userEmail={ctx.user.email ?? ''}>
-      {/* Navegacion breadcrumb */}
-      <nav
-        style={{
-          marginBottom: '1.25rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          fontSize: '0.82rem',
-          color: '#9ca3af',
-        }}
-        aria-label="Breadcrumb"
-      >
-        <Link href="/dashboard" style={{ color: '#6b7280', textDecoration: 'none' }}>
-          Dashboard
-        </Link>
-        <span aria-hidden>›</span>
-        <span style={{ color: '#374151', fontWeight: 600 }}>Cola de aprobacion</span>
-        <span aria-hidden style={{ marginLeft: 'auto' }}>
-          {/*
-           * Link rapido al outbox desde la cola de aprobacion.
-           * Flujo esperado: aprobar mensaje aqui → ir al outbox a simular envio.
-           */}
-        </span>
-      </nav>
 
-      {/*
-       * Links rapidos al scheduler y al outbox.
-       * El scheduler es el paso ANTERIOR (mueve quotes a scheduled).
-       * El outbox es el paso POSTERIOR (envia el mensaje aprobado).
-       * Las cotizaciones llegan aqui desde /dashboard/scheduler o desde /quotes/new.
-       */}
-      <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-        <Link
-          href="/dashboard/scheduler"
-          style={{
-            padding: '0.4rem 0.9rem',
-            background: '#f5f3ff',
-            color: '#7c3aed',
-            border: '1px solid #c4b5fd',
-            borderRadius: '6px',
-            fontSize: '0.82rem',
-            fontWeight: 600,
-            textDecoration: 'none',
-          }}
-        >
-          ← Scheduler local
-        </Link>
-        <Link
-          href="/dashboard/outbox"
-          style={{
-            padding: '0.4rem 0.9rem',
-            background: '#fff7ed',
-            color: '#c2410c',
-            border: '1px solid #fed7aa',
-            borderRadius: '6px',
-            fontSize: '0.82rem',
-            fontWeight: 600,
-            textDecoration: 'none',
-          }}
-        >
-          Outbox local →
-        </Link>
-      </div>
+      <DemoDisclaimer message="Cola de aprobacion local: revisar el mensaje M1 antes de simular el envío. No envía WhatsApp real." />
 
-      {/* Encabezado */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1
-          style={{
-            margin: '0 0 0.25rem',
-            fontSize: '1.25rem',
-            fontWeight: 700,
-            color: '#0f172a',
-          }}
-        >
-          Cola de aprobacion
-        </h1>
-        <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem', color: '#64748b' }}>
-          {ctx.producer?.name ?? 'Producer'} — rol:{' '}
-          <strong>{ctx.membership?.role ?? '—'}</strong>
-        </p>
-        {/*
-         * Recordatorio de estado para el equipo de desarrollo.
-         * No apareceria en produccion — es un badge informativo del MVP.
-         */}
-        <div
-          style={{
-            display: 'inline-block',
-            padding: '0.25rem 0.6rem',
-            background: '#fef3c7',
-            border: '1px solid #fcd34d',
-            borderRadius: '12px',
-            fontSize: '0.72rem',
-            color: '#92400e',
-            fontWeight: 600,
-          }}
-        >
-          MVP LOCAL — Sin WhatsApp real · Sin IA · Solo aprobacion local
-        </div>
-      </div>
+      <PageHeader
+        breadcrumb={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Cola de aprobacion' }]}
+        title="Cola de aprobacion"
+        subtitle={`${ctx.producer?.name ?? 'Producer'} · Revisa y aprueba los mensajes M1 de seguimiento.`}
+        actions={
+          <>
+            <Link href="/dashboard/scheduler" style={{ fontSize: '0.82rem', color: '#7c3aed', textDecoration: 'none', fontWeight: 600 }}>← Scheduler</Link>
+            <Link href="/dashboard/outbox" style={{ fontSize: '0.82rem', color: '#d97706', textDecoration: 'none', fontWeight: 600 }}>Outbox →</Link>
+          </>
+        }
+      />
 
       {/* Error de query */}
       {queueResult.error && (

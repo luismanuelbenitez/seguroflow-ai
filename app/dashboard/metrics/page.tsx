@@ -4,6 +4,8 @@ import { getCurrentProducerContext } from '@/lib/producers/get-current-producer-
 import { getBasicDashboardMetrics } from '@/lib/metrics/get-basic-dashboard-metrics'
 import { formatQuoteStatus } from '@/lib/quotes/get-quotes-for-current-producer'
 import DashboardShell from '@/components/dashboard/dashboard-shell'
+import PageHeader from '@/components/ui/page-header'
+import DemoDisclaimer from '@/components/ui/demo-disclaimer'
 import type { RecentEvent, StatusCount } from '@/lib/metrics/get-basic-dashboard-metrics'
 import type { Database } from '@/types/database'
 
@@ -345,73 +347,20 @@ export default async function MetricsPage() {
   return (
     <DashboardShell userEmail={ctx.user.email ?? ''}>
 
-      {/* ── Encabezado ──────────────────────────────────────────────────── */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <p style={{ margin: '0 0 0.25rem', fontSize: '0.82rem', color: '#94a3b8' }}>
-          <Link href="/dashboard" style={{ color: '#94a3b8', textDecoration: 'none' }}>
-            Dashboard
-          </Link>
-          {' / '}
-          <span style={{ color: '#475569' }}>Métricas locales</span>
-        </p>
-        <h1 style={{ margin: '0 0 0.5rem', fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
-          Métricas locales
-        </h1>
-        <p style={{ margin: 0, fontSize: '0.85rem', color: '#6b7280' }}>
-          {producerName}
-        </p>
-      </div>
+      <DemoDisclaimer message="Métricas locales: datos simulados del flujo MVP. Sin WhatsApp real ni IA integrada." />
 
-      {/* ── Links de navegación rápida ───────────────────────────────────── */}
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '0.5rem',
-          marginBottom: '1.25rem',
-        }}
-      >
-        {[
-          { href: '/dashboard/quotes/new', label: 'Nueva cotizacion', color: '#2563eb' },
-          { href: '/dashboard/scheduler', label: 'Scheduler local', color: '#7c3aed' },
-          { href: '/dashboard/approvals', label: 'Cola de aprobacion', color: '#059669' },
-          { href: '/dashboard/outbox', label: 'Outbox local', color: '#d97706' },
-          { href: '/dashboard/quotes', label: 'Ver cotizaciones', color: '#0891b2' },
-        ].map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            style={{
-              display: 'inline-block',
-              padding: '0.35rem 0.75rem',
-              background: link.color,
-              color: '#fff',
-              borderRadius: '6px',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              textDecoration: 'none',
-            }}
-          >
-            {link.label}
-          </Link>
-        ))}
-      </div>
-
-      {/* ── Disclaimer ──────────────────────────────────────────────────── */}
-      <div
-        style={{
-          background: '#eff6ff',
-          border: '1px solid #bfdbfe',
-          borderRadius: '8px',
-          padding: '0.75rem 1rem',
-          marginBottom: '1.5rem',
-          fontSize: '0.82rem',
-          color: '#1e40af',
-        }}
-      >
-        <strong>MVP local:</strong> Estas métricas usan datos locales simulados.
-        No hay WhatsApp real ni IA integrada. Los mensajes outbound/inbound son simulaciones del flujo.
-      </div>
+      <PageHeader
+        breadcrumb={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Métricas locales' }]}
+        title="Métricas locales"
+        subtitle={producerName}
+        actions={
+          <>
+            <Link href="/dashboard/quotes/new" style={{ fontSize: '0.82rem', color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}>+ Nueva cotizacion</Link>
+            <Link href="/dashboard/scheduler" style={{ fontSize: '0.82rem', color: '#7c3aed', textDecoration: 'none', fontWeight: 600 }}>Scheduler →</Link>
+            <Link href="/dashboard/quotes" style={{ fontSize: '0.82rem', color: '#0891b2', textDecoration: 'none', fontWeight: 600 }}>Cotizaciones →</Link>
+          </>
+        }
+      />
 
       {/* ── Error de query ───────────────────────────────────────────────── */}
       {metrics.error && (

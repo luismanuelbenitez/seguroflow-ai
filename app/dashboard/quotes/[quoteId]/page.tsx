@@ -5,6 +5,7 @@ import { getQuoteDetail } from '@/lib/quotes/get-quote-detail'
 import { formatQuoteStatus, formatInsuranceType } from '@/lib/quotes/get-quotes-for-current-producer'
 import DashboardShell from '@/components/dashboard/dashboard-shell'
 import SimulateInboundForm from '@/components/dashboard/simulate-inbound-form'
+import PageHeader from '@/components/ui/page-header'
 import { INBOUND_ELIGIBLE_STATUSES } from '@/lib/messages/inbound-scenarios'
 import type { QuoteEventDetailRow, QuoteDetailRow, ProspectDetailRow, QuoteStatus } from '@/lib/quotes/get-quote-detail'
 
@@ -145,91 +146,37 @@ export default async function QuoteDetailPage({ params }: PageProps) {
 
   return (
     <DashboardShell userEmail={ctx.user.email ?? ''}>
-      {/* Breadcrumb */}
-      <nav
-        style={{
-          marginBottom: '1.25rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          fontSize: '0.82rem',
-          color: '#9ca3af',
-        }}
-        aria-label="Breadcrumb"
-      >
-        <Link href="/dashboard" style={{ color: '#6b7280', textDecoration: 'none' }}>
-          Dashboard
-        </Link>
-        <span aria-hidden>›</span>
-        <Link href="/dashboard/quotes" style={{ color: '#6b7280', textDecoration: 'none' }}>
-          Cotizaciones
-        </Link>
-        <span aria-hidden>›</span>
-        <span style={{ color: '#374151', fontWeight: 600 }}>
-          {prospect?.full_name ?? 'Detalle'}
-        </span>
-      </nav>
 
-      {/* Encabezado de la quote */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '0.75rem',
-          marginBottom: '1.5rem',
-        }}
-      >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
-              {prospect?.full_name ?? 'Prospect desconocido'}
-            </h1>
-            {isDemo && (
-              <span
+      <PageHeader
+        breadcrumb={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Cotizaciones', href: '/dashboard/quotes' },
+          { label: prospect?.full_name ?? 'Detalle' },
+        ]}
+        title={prospect?.full_name ?? 'Prospect desconocido'}
+        subtitle={`${formatInsuranceType(quote.insurance_type)} · ID: ${quote.id.slice(0, 8)}…${isDemo ? ' · DEMO' : ''}`}
+        actions={
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <QuoteStatusBadge status={quote.status} />
+            {['pending_follow_up', 'scheduled', 'pending_approval'].includes(quote.status) && (
+              <Link
+                href="/dashboard/approvals"
                 style={{
-                  background: '#fef3c7',
-                  color: '#92400e',
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  padding: '0.2rem 0.5rem',
-                  borderRadius: '4px',
-                  letterSpacing: '0.03em',
+                  padding: '0.35rem 0.8rem',
+                  background: '#059669',
+                  color: '#fff',
+                  borderRadius: '6px',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
                 }}
               >
-                DEMO
-              </span>
+                Aprobar mensaje M1 →
+              </Link>
             )}
           </div>
-          <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#64748b' }}>
-            {formatInsuranceType(quote.insurance_type)} · ID: <code style={{ fontSize: '0.78rem' }}>{quote.id.slice(0, 8)}…</code>
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* Badge de estado */}
-          <QuoteStatusBadge status={quote.status} />
-
-          {/* Link a la cola de aprobacion si es elegible */}
-          {['pending_follow_up', 'scheduled', 'pending_approval'].includes(quote.status) && (
-            <Link
-              href="/dashboard/approvals"
-              style={{
-                padding: '0.3rem 0.75rem',
-                background: '#059669',
-                color: '#fff',
-                borderRadius: '6px',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                textDecoration: 'none',
-              }}
-            >
-              Aprobar mensaje M1
-            </Link>
-          )}
-        </div>
-      </div>
+        }
+      />
 
       {/* Grid de datos: quote a la izquierda, prospect a la derecha */}
       <div

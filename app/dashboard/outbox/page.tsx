@@ -5,6 +5,8 @@ import { getLocalOutbox } from '@/lib/outbox/get-local-outbox'
 import { formatInsuranceType, formatQuoteStatus } from '@/lib/quotes/get-quotes-for-current-producer'
 import DashboardShell from '@/components/dashboard/dashboard-shell'
 import SimulateSendButton from '@/components/dashboard/simulate-send-button'
+import PageHeader from '@/components/ui/page-header'
+import DemoDisclaimer from '@/components/ui/demo-disclaimer'
 
 /*
  * INTENCION: Outbox local simulado — ruta protegida.
@@ -124,99 +126,23 @@ export default async function OutboxPage() {
   // ── Renderizar pagina ─────────────────────────────────────────────────────
   return (
     <DashboardShell userEmail={ctx.user.email ?? ''}>
-      {/* Breadcrumb */}
-      <nav
-        style={{
-          marginBottom: '1.25rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          fontSize: '0.82rem',
-          color: '#9ca3af',
-        }}
-        aria-label="Breadcrumb"
-      >
-        <Link href="/dashboard" style={{ color: '#6b7280', textDecoration: 'none' }}>
-          Dashboard
-        </Link>
-        <span aria-hidden>›</span>
-        <span style={{ color: '#374151', fontWeight: 600 }}>Outbox local</span>
-      </nav>
 
-      {/* Encabezado */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1
-          style={{
-            margin: '0 0 0.25rem',
-            fontSize: '1.25rem',
-            fontWeight: 700,
-            color: '#0f172a',
-          }}
-        >
-          Outbox local
-        </h1>
-        <p style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', color: '#64748b' }}>
-          {ctx.producer?.name ?? 'Producer'} — rol:{' '}
-          <strong>{ctx.membership?.role ?? '—'}</strong>
-        </p>
+      <DemoDisclaimer
+        message="Outbox local: 'Simular envío' registra el evento pero NO envía mensajes reales por WhatsApp."
+        variant="warning"
+      />
 
-        {/*
-         * AVISO CRITICO: Este es el recordatorio mas importante de la pantalla.
-         * Siempre visible, independientemente de si hay items o no.
-         * Refuerza que "Simular envio" != "Enviar por WhatsApp".
-         */}
-        <div
-          style={{
-            padding: '0.75rem 1rem',
-            background: '#fff7ed',
-            border: '1px solid #fed7aa',
-            borderRadius: '8px',
-            fontSize: '0.85rem',
-            color: '#c2410c',
-            lineHeight: 1.6,
-          }}
-          role="note"
-        >
-          <strong>Simulacion local:</strong> Esta pantalla NO envia mensajes por WhatsApp.
-          Al hacer clic en "Simular envio", se registra localmente que el mensaje habria
-          sido enviado (actualiza el estado de la cotizacion y agrega un evento al timeline).
-          La integracion real con WhatsApp Business API (WABA) es la siguiente etapa del MVP.
-        </div>
-      </div>
-
-      {/* Links de navegacion rapida */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        <Link
-          href="/dashboard/approvals"
-          style={{
-            padding: '0.4rem 0.9rem',
-            background: '#f0f9ff',
-            color: '#0369a1',
-            border: '1px solid #bae6fd',
-            borderRadius: '6px',
-            fontSize: '0.82rem',
-            fontWeight: 600,
-            textDecoration: 'none',
-          }}
-        >
-          ← Cola de aprobacion
-        </Link>
-        <Link
-          href="/dashboard/quotes"
-          style={{
-            padding: '0.4rem 0.9rem',
-            background: '#f8fafc',
-            color: '#475569',
-            border: '1px solid #cbd5e1',
-            borderRadius: '6px',
-            fontSize: '0.82rem',
-            fontWeight: 600,
-            textDecoration: 'none',
-          }}
-        >
-          Ver todas las cotizaciones
-        </Link>
-      </div>
+      <PageHeader
+        breadcrumb={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Outbox local' }]}
+        title="Outbox local"
+        subtitle={`${ctx.producer?.name ?? 'Producer'} · Mensajes aprobados listos para simular envío.`}
+        actions={
+          <>
+            <Link href="/dashboard/approvals" style={{ fontSize: '0.82rem', color: '#059669', textDecoration: 'none', fontWeight: 600 }}>← Aprobacion</Link>
+            <Link href="/dashboard/quotes" style={{ fontSize: '0.82rem', color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}>Cotizaciones →</Link>
+          </>
+        }
+      />
 
       {/* Error de query */}
       {outboxResult.error && (
