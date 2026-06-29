@@ -9,7 +9,7 @@
 ## Estado general
 
 **Fase:** Skeleton tecnico validado. Listo para implementar primer modulo.
-**Progreso:** Next.js 15 skeleton creado y buildeado. Migracion 001 validada localmente con supabase db reset. Tipos TypeScript generados desde DB local.
+**Progreso:** Next.js 15 skeleton creado y buildeado. Migracion 001 validada localmente con supabase db reset (NO aplicada remotamente). Tipos TypeScript generados desde DB local. Reglas de seguridad Supabase documentadas.
 
 ---
 
@@ -21,6 +21,7 @@
 | `CODING_RULES.md` | Reglas de codificación obligatorias para humanos e IAs | Completo |
 | `AI_BRIEF.md` | Resumen ejecutivo de una página para nuevas sesiones de IA | Completo |
 | `CURRENT_STATE.md` | Este archivo — estado del proyecto | Completo |
+| `SUPABASE_SAFETY_RULES.md` | Reglas criticas de seguridad: project-ref permitido, proyectos prohibidos, protocolo de verificacion | Completo |
 
 ### `/docs/01-vision/` — Visión del producto
 | Archivo | Contenido | Estado |
@@ -95,7 +96,8 @@
 
 ## Qué NO se debe hacer todavía
 
-- **No ejecutar supabase db push** (migracion remota) hasta que el proyecto Supabase en la nube este creado y configurado.
+- **No ejecutar supabase db push** (migracion remota) hasta verificar project-ref = `fawlbfkkxufyhnghynjk`. Ver SUPABASE_SAFETY_RULES.md.
+- **No tocar el proyecto TuHoroscopoCosmico.com** desde este repo bajo ninguna circunstancia.
 - **No avanzar a funcionalidad real** sin antes implementar Auth (login/logout) para el producer.
 - **No crear infraestructura productiva** hasta tener los templates HSM aprobados por Meta.
 - **No contactar prospectos reales** con mensajes de prueba.

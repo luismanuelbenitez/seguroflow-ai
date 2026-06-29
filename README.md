@@ -65,6 +65,18 @@ npx supabase@2.108.0 db reset   # Aplica migraciones localmente (NO a produccion
 npm run dev
 ```
 
+## Supabase — seguridad de entorno
+
+Este repo apunta **exclusivamente** al proyecto Supabase `seguroflow-ai` (ref: `fawlbfkkxufyhnghynjk`).
+
+- No ejecutar comandos remotos (`db push`, `migration up`, `functions deploy`) sin verificar el project-ref primero.
+- **Nunca** conectar este repo al proyecto `TuHoroscopoCosmico.com` ni a ningun otro proyecto Supabase.
+- `supabase db reset` es local (seguro). `supabase db push` es remoto (requiere confirmacion humana).
+
+Ver reglas completas: `docs/00-ai-context/SUPABASE_SAFETY_RULES.md`
+
+---
+
 ## Documentacion
 
 Ver `docs/README.md` para el indice completo de documentacion.

@@ -79,35 +79,86 @@ Pasos recomendados antes de ejecutar contra cualquier entorno:
 
 ---
 
+## Seguridad de entorno remoto (Remote Safety)
+
+> Leer antes de ejecutar cualquier comando que no sea `db reset`.
+
+### Proyecto autorizado
+
+| Campo | Valor |
+|---|---|
+| Nombre | seguroflow-ai |
+| Project ref | `fawlbfkkxufyhnghynjk` |
+
+### Proyecto PROHIBIDO desde este repo
+
+**TuHoroscopoCosmico.com** — proyecto Supabase distinto en la misma cuenta.
+Ningun comando de este repo debe ejecutarse contra ese proyecto.
+
+### db reset vs db push
+
+| Comando | Entorno | Permitido |
+|---|---|---|
+| `supabase db reset` | Local (Docker) | Si — validacion local, sin riesgo |
+| `supabase db push` | Remoto (nube) | Solo con confirmacion humana + project-ref verificado |
+
+### Verificacion obligatoria antes de db push
+
+```bash
+# 1. Verificar que el project-ref activo es el correcto
+cat supabase/.temp/project-ref
+# → debe mostrar exactamente: fawlbfkkxufyhnghynjk
+
+# 2. Ver diff antes de aplicar
+npx supabase@2.108.0 db diff --schema public
+
+# 3. Solo si los pasos anteriores son correctos y hay OK humano:
+npx supabase@2.108.0 db push
+```
+
+Si el project-ref no es `fawlbfkkxufyhnghynjk`: **no ejecutar**. Ver `docs/00-ai-context/SUPABASE_SAFETY_RULES.md`.
+
+---
+
 ## Cómo aplicar
 
 ### Entorno local (recomendado para desarrollo)
 
-Requiere Supabase CLI instalado (`npm install -g supabase` o guía oficial en supabase.com/docs/guides/cli).
+Requiere Docker Desktop corriendo y Supabase CLI disponible.
 
 ```bash
-# Iniciar stack local (primera vez)
-supabase start
+# Iniciar stack local (primera vez o tras reiniciar Docker)
+npx supabase@2.108.0 start
 
-# Aplicar migraciones pendientes
-supabase db push
+# Aplicar migraciones y resetear DB local
+npx supabase@2.108.0 db reset
 
 # O ejecutar directamente en psql local
 psql postgresql://postgres:postgres@localhost:54322/postgres \
   -f supabase/migrations/001_base_multitenant_schema.sql
 ```
 
-### Entorno remoto (staging o producción)
+### Entorno remoto (staging o produccion)
 
 ```bash
-# Vincular con el proyecto de Supabase
-supabase link --project-ref <project-ref>
+# 1. Verificar project-ref antes de linkear
+# El project-ref permitido es: fawlbfkkxufyhnghynjk
 
-# Aplicar migraciones
-supabase db push
+# Vincular con el proyecto de Supabase correcto
+npx supabase@2.108.0 link --project-ref fawlbfkkxufyhnghynjk
+
+# Verificar link activo
+cat supabase/.temp/project-ref
+
+# Ver diff antes de aplicar
+npx supabase@2.108.0 db diff --schema public
+
+# Aplicar migraciones (solo con confirmacion humana explicita)
+npx supabase@2.108.0 db push
 ```
 
-**No ejecutar contra producción sin haber validado en local o staging primero.**
+**No ejecutar contra produccion sin haber validado en local primero.**
+**No ejecutar db push sin verificar que project-ref = `fawlbfkkxufyhnghynjk`.**
 
 ---
 
