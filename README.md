@@ -123,6 +123,58 @@ El dashboard en `/dashboard` requiere sesion activa (login previo).
 
 ---
 
+## Seed local de producer demo
+
+El dashboard en `/dashboard` requiere que el usuario tenga una membresía activa en
+`producer_members`. Tras un `supabase db reset`, la base de datos está vacía y el
+dashboard muestra un estado vacío informativo.
+
+Para ver el dashboard con datos de prueba, hay que crear un producer ficticio y
+asociarlo al usuario autenticado local.
+
+**Flujo completo:**
+
+```bash
+# 1. Iniciar Supabase local y la app
+npx supabase@2.108.0 start
+npm run dev
+
+# 2. Loguearse con magic link
+#    Ir a http://localhost:3000/login → ingresar email → ver link en Inbucket (http://localhost:54324)
+
+# 3. Obtener el user_id del usuario autenticado
+#    Ir a http://localhost:3000/dev/user → copiar el UUID que aparece como "user.id"
+
+# 4. Copiar el archivo de ejemplo y reemplazar el placeholder
+cp supabase/seed.local.example.sql /tmp/seed.local.sql
+# Editar /tmp/seed.local.sql: reemplazar LOCAL_AUTH_USER_ID por el UUID del paso 3
+
+# 5. Ejecutar el SQL como service role (usar Supabase Studio local)
+#    Ir a http://localhost:54323 → SQL Editor → pegar el contenido del SQL → Run
+
+# 6. Volver al dashboard y verificar
+#    Ir a http://localhost:3000/dashboard → debe aparecer "Productor Demo Local"
+```
+
+**Métodos para ejecutar el SQL:**
+
+| Método | Comando / URL |
+|---|---|
+| Supabase Studio (recomendado) | `http://localhost:54323` → SQL Editor |
+| psql directo | `psql postgresql://postgres:postgres@localhost:54322/postgres` |
+| CLI Supabase | `npx supabase@2.108.0 db query --local --file <archivo>` |
+
+**Notas importantes:**
+
+- El seed usa datos ficticios. No crear datos de productores reales.
+- El seed NO ejecuta `supabase db push`. Solo afecta la base de datos local.
+- El producer demo tiene UUID fijo `00000000-0000-0000-0000-000000001001` para facilitar identificación.
+- Para limpiar: `npx supabase@2.108.0 db reset` (reinicia la DB local completa).
+
+Ver guía completa: `docs/05-architecture/LOCAL_SEEDING.md`
+
+---
+
 ## Supabase — seguridad de entorno
 
 Este repo apunta **exclusivamente** al proyecto Supabase `seguroflow-ai` (ref: `fawlbfkkxufyhnghynjk`).

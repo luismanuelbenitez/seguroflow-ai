@@ -8,8 +8,8 @@
 
 ## Estado general
 
-**Fase:** Dashboard local del producer implementado con verificacion de producer_members.
-**Progreso:** Auth magic link + dashboard con contexto de producer. Verificacion de membresia activa. Estado vacio informativo cuando no hay seed local. npm run build exitoso. Migracion 001 validada solo localmente (NO aplicada remotamente). supabase db push sigue prohibido sin confirmacion humana.
+**Fase:** Seed local de demo disponible. Dashboard con verificacion de producer_members.
+**Progreso:** Auth magic link + dashboard con contexto de producer. Seed local de ejemplo creado (seed.local.example.sql) — no ejecutado automaticamente, requiere reemplazo manual de LOCAL_AUTH_USER_ID. Pagina /dev/user para obtener el UUID del usuario local. Migracion 001 validada solo localmente (NO aplicada remotamente). supabase db push sigue prohibido sin confirmacion humana.
 
 ---
 
@@ -44,6 +44,7 @@
 | Archivo | Contenido | Estado |
 |---|---|---|
 | `DATA_MODEL.md` | 10 tablas en inglés, multi-tenant, RLS, enums en inglés, índices, trigger opt-out. Alineado con DECISION-003. | Completo v2.0 |
+| `LOCAL_SEEDING.md` | Guía de seed local: por qué, cómo, flujo completo, métodos de ejecución, restricciones de RLS | Completo |
 
 ### `/docs/07-go-to-market/` — Salida al mercado
 | Archivo | Contenido | Estado |
@@ -105,7 +106,7 @@
 | Proyecto PROHIBIDO | `TuHoroscopoCosmico.com` — nunca tocar desde este repo |
 | Estado de migracion remota | **NO aplicada** — solo validada localmente con `db reset` |
 | `supabase db push` | PROHIBIDO sin confirmacion humana explicita + verificacion de project-ref |
-| Proximo paso Supabase | Dashboard local del producer + verificacion de producer_members. No remoto. La migracion remota espera hasta tener el proyecto cloud configurado. |
+| Proximo paso Supabase | Seed local ejecutado manualmente por el desarrollador. No remoto. La migracion remota espera hasta tener el proyecto cloud configurado. |
 
 ---
 
@@ -146,13 +147,20 @@
         - components/dashboard/dashboard-shell.tsx (layout con header + logout)
         - components/dashboard/producer-summary-card.tsx (producer info o estado vacio)
         - app/dashboard/page.tsx actualizado con contexto de producer
-   13. Seed local o flujo de onboarding minimo para asociar usuario a producer
-        (insertar en producers + producer_members con user_id del usuario autenticado)
-   14. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
-   15. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
-   16. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
-   17. Listar cotizaciones (quotes) y prospectos (prospects) en dashboard
-   18. Iniciar implementacion MVP-01 (deteccion de cotizaciones, envio de mensajes)
+✅ 13. Seed local de producer demo (manual, no automatico)
+        - supabase/seed.local.example.sql (ejemplo con ON CONFLICT, requiere reemplazar LOCAL_AUTH_USER_ID)
+        - app/dev/user/page.tsx (pagina dev-only para obtener el user.id del usuario autenticado)
+        - docs/05-architecture/LOCAL_SEEDING.md (guia completa del flujo de seed)
+        - README.md actualizado con seccion "Seed local de producer demo"
+        - El seed NO se ejecuta automaticamente — requiere intervencion manual del desarrollador
+        - El seed NO ejecuta supabase db push — solo afecta la DB local de Docker
+   14. Ejecutar el seed local: reemplazar LOCAL_AUTH_USER_ID + ejecutar en Supabase Studio
+        (ver docs/05-architecture/LOCAL_SEEDING.md para el flujo completo)
+   15. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
+   16. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
+   17. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
+   18. Listar cotizaciones (quotes) y prospectos (prospects) en dashboard
+   19. Iniciar implementacion MVP-01 (deteccion de cotizaciones, envio de mensajes)
 ```
 
 ---
