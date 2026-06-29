@@ -8,8 +8,8 @@
 
 ## Estado general
 
-**Fase:** DECISION-004 tomada. Estrategia de ingesta de cotizaciones definida: formulario manual primero, CSV post-piloto.
-**Progreso:** Seed local ejecutado y verificado. Pantalla /dashboard/quotes con lista de quotes y creacion demo funcionando. DECISION-004 documenta la decision de ingesta: formulario manual para el MVP, CSV diferido. No hay nuevas migraciones — todos los campos necesarios existen en el schema v2.0. npm run build exitoso. supabase db push sigue prohibido.
+**Fase:** Formulario manual de cotizaciones implementado. Flujo /dashboard/quotes/new funciona end-to-end con validacion server-side y deduplicacion de prospects.
+**Progreso:** Formulario en /dashboard/quotes/new con 10 campos, validacion E.164, deduplicacion de prospect por (producer_id, phone), Server Action createManualQuote() con redirect en exito. DECISION-004 aplicada: sin quote_reference (no existe en schema), usando risk_description para referencia textual. No hay nuevas migraciones. npm run build exitoso. supabase db push sigue prohibido.
 
 **Usuario demo local:** demo@seguroflow.local (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1 — valido solo en la DB local actual)
 
@@ -179,12 +179,21 @@
         - CSV diferido a fase post-piloto (modelo de campos no validado aun)
         - No requiere nuevas migraciones (todos los campos en schema v2.0)
         - Documenta campos minimos, reglas PII, nota legal sobre consentimiento
-   17. Formulario manual de carga de cotizaciones: /dashboard/quotes/new
-        - Server Action createQuote() en app/actions/quotes.ts
-        - Validacion server-side: full_name, phone (E.164), insurance_type
-        - Deduplicacion de prospect por (producer_id, phone)
-        - Redireccion a /dashboard/quotes post-submit
-   18. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
+✅ 17. Formulario manual de cotizaciones: /dashboard/quotes/new
+        - app/actions/quotes.ts: createManualQuote() con firma (prevState, FormData) para useActionState
+        - Validacion server-side: full_name, phone E.164, insurance_type (enum), quote_date, quoted_amount
+        - Normalizacion de telefono: strip espacios/guiones antes de validar
+        - Deduplicacion de prospect por (producer_id, phone) — reutiliza si existe
+        - redirect('/dashboard/quotes') en exito — el cliente nunca ve resultado exitoso
+        - En error: retorna fieldErrors por campo para mostrar inline en el formulario
+        - components/dashboard/quote-form.tsx: Client Component con useActionState
+        - app/dashboard/quotes/new/page.tsx: Server Component con auth guard y breadcrumb
+        - app/dashboard/quotes/page.tsx: link "+ Nueva cotizacion manual" en el encabezado
+        - README.md: seccion "Carga manual local de cotizaciones"
+        - DECISION-004 aplicada: risk_description para referencias (quote_reference no existe en schema)
+   18. Definir primer flujo de seguimiento: secuencia de mensajes WhatsApp para quotes pending_follow_up
+        (solo diseño/documento — sin integracion real todavia)
+   19. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
    18. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
    19. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
    20. Carga de cotizaciones reales (formulario o CSV) — ver DECISION pendiente

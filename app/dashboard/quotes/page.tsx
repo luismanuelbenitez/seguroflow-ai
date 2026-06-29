@@ -174,23 +174,38 @@ export default async function QuotesPage() {
           </p>
         </div>
 
-        {/*
-         * Boton de creacion demo.
-         * Es un Client Component para manejar el estado de carga y el refresh.
-         * Solo aparece en esta pantalla — no es una funcionalidad de produccion todavia.
-         */}
-        <div>
-          <p
+        {/* Acciones del encabezado */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+          {/*
+           * Boton principal: navega al formulario de ingesta manual.
+           * No requiere Client Component — es un link de navegacion simple.
+           */}
+          <Link
+            href="/dashboard/quotes/new"
             style={{
-              margin: '0 0 0.4rem',
-              fontSize: '0.75rem',
-              color: '#9ca3af',
-              fontWeight: 500,
+              display: 'inline-block',
+              padding: '0.5rem 1rem',
+              background: '#2563eb',
+              color: '#fff',
+              borderRadius: '6px',
+              fontSize: '0.88rem',
+              fontWeight: 600,
+              textDecoration: 'none',
             }}
           >
-            Solo en desarrollo local
-          </p>
-          <CreateDemoQuoteButton />
+            + Nueva cotizacion manual
+          </Link>
+
+          {/*
+           * Herramientas de desarrollo — separadas del flujo real.
+           * CreateDemoQuoteButton sigue disponible para seed rapido en local.
+           */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
+            <p style={{ margin: 0, fontSize: '0.72rem', color: '#9ca3af', fontWeight: 500 }}>
+              Solo desarrollo local:
+            </p>
+            <CreateDemoQuoteButton />
+          </div>
         </div>
       </div>
 

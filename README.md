@@ -209,6 +209,57 @@ En `/dashboard/quotes` hay un botón **"Crear cotización demo local"** que:
 
 ---
 
+## Carga manual local de cotizaciones
+
+La pantalla `/dashboard/quotes/new` permite ingresar cotizaciones reales (o ficticias en local)
+directamente desde la interfaz web.
+
+**Requisitos previos:**
+- Login local con magic link (Mailpit: `http://localhost:54324`)
+- Seed local ejecutado (producer + membership — ver sección anterior)
+
+**Flujo:**
+
+```
+/login → /dashboard → /dashboard/quotes → "+ Nueva cotización manual" → /dashboard/quotes/new
+```
+
+**Campos del formulario:**
+
+| Campo | Tabla | Obligatorio |
+|---|---|---|
+| Nombre completo | `prospects.full_name` | Sí |
+| Teléfono WhatsApp | `prospects.phone` (E.164) | Sí |
+| Email | `prospects.email` | No |
+| Base de contacto | `prospects.consent_status` | No (default: `granted`) |
+| Tipo de seguro | `quotes.insurance_type` (enum) | Sí |
+| Fecha de cotización | `quotes.quote_date` | Sí (default: hoy) |
+| Monto cotizado | `quotes.quoted_amount` | No |
+| Moneda | `quotes.currency` | No (default: `UYU`) |
+| Descripción / referencia | `quotes.risk_description` | No |
+| Notas internas | `quotes.internal_notes` | No |
+
+**Deduplicación de prospects:**
+Si ya existe un prospect con el mismo teléfono en el mismo producer, el sistema lo reutiliza.
+No crea duplicados. Útil al cargar varias cotizaciones del mismo cliente.
+
+**Formato de teléfono:**
+E.164: `+` seguido de código de país y número. Ej: `+59899123456` (Uruguay móvil).
+El sistema normaliza espacios y guiones antes de validar.
+
+**Lo que NO hace:**
+- No envía mensajes por WhatsApp
+- No integra IA
+- No usa datos reales (en local usa datos de prueba)
+- No aplica migraciones remotas (`supabase db push`)
+- No usa el service role key en el frontend
+
+**Nota técnica:** `quote_reference` no existe en el schema v2.0. Usar el campo
+`risk_description` para guardar referencias tipo `COT-001 — Toyota Hilux 2022`.
+Ver: `docs/04-decisiones/DECISION-004-ingesta-cotizaciones-mvp.md`
+
+---
+
 ## Supabase — seguridad de entorno
 
 Este repo apunta **exclusivamente** al proyecto Supabase `seguroflow-ai` (ref: `fawlbfkkxufyhnghynjk`).
