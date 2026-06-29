@@ -4,14 +4,12 @@
 > Actualizar cada vez que haya un avance significativo.
 > **Última actualización: 2026-06-29**
 
-
-
 ---
 
 ## Estado general
 
-**Fase:** MVP local fase 1 completo + paquete go-to-market completo + estrategia de auth actualizada.
-**Progreso:** Flujo completo simulado + métricas + polish visual + plan WhatsApp M2 + checklist pre-piloto + guion de demo + runbook de discovery + plantilla de feedback + mensajes de outreach + auth email+password como principal. Listo para demo comercial con acceso directo sin dependencia de email. Sin WhatsApp real. Sin IA. Sin migraciones. supabase db push sigue prohibido. TuHoroscopoCosmico.com sigue prohibido.
+**Fase:** MVP local fase 1 completo + paquete go-to-market completo + estrategia de auth actualizada + repo nuevo configurado + Vercel deploy plan creado.
+**Progreso:** Flujo completo simulado + métricas + polish visual + plan WhatsApp M2 + checklist pre-piloto + guion de demo + runbook de discovery + plantilla de feedback + mensajes de outreach + auth email+password como principal. npm run build exitoso (14 rutas, Next.js 15.5.19). Bug `use server` corregido en sesión anterior. Repo migrado a github.com/luismanuelbenitez/seguroflow-ai. Vercel deploy plan creado. Listo para conectar Vercel cuando se autorice. Sin WhatsApp real. Sin IA. Sin migraciones. supabase db push sigue prohibido. TuHoroscopoCosmico.com sigue prohibido.
 
 **Auth principal:** Email + password (DECISION-007). Magic link disponible como fallback técnico, no visible en la UI.
 **Usuario demo local:** demo@seguroflow.local / Demo123456! (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1 — valido solo en la DB local actual)
@@ -347,6 +345,30 @@
         - IA real: NO integrada
         - db push: NO ejecutado
         - TuHoroscopoCosmico.com: NO tocado
+✅ 30. Repo migrado al nuevo GitHub, build validado, Vercel deploy plan creado (2026-06-29)
+        - Bug 'use server': ya corregido en sesion anterior (commits fix: remove all export const
+          y fix: move MANUAL_QUOTE_INITIAL_STATE). En esta sesion se confirmo que el codigo esta limpio.
+        - Causa raiz del error en browser: dev server bloqueaba .next\trace, impidiendo npm run build.
+          Solucion: detener el dev server antes de ejecutar build. No era un bug de codigo.
+        - npm run build: exitoso (14 rutas, Next.js 15.5.19, TypeScript sin errores)
+        - .gitignore actualizado: agrega tsconfig.tsbuildinfo (archivo de build de TS no commiteable)
+        - Verificacion de secretos: .env.local excluido, supabase/.branches excluido por supabase/.gitignore
+          ningun secreto real en codigo commitado — solo comentarios de referencia
+        - Git remotes actualizados:
+          old-origin → https://github.com/mbenitezmdeo/seguroflow-ai.git (repo anterior)
+          origin → https://github.com/luismanuelbenitez/seguroflow-ai.git (repo nuevo)
+        - Push exitoso al repo nuevo: github.com/luismanuelbenitez/seguroflow-ai
+        - docs/06-integrations/VERCEL_DEPLOY_PLAN.md creado:
+          Variables requeridas, checklist pre-deploy, configuracion de Auth en cloud,
+          protocolo de migraciones (requiere verificacion de project-ref y autorizacion humana)
+        - db push: NO ejecutado
+        - supabase db push: sigue prohibido sin autorizacion humana explicita
+        - TuHoroscopoCosmico.com: NO tocado
+        - WhatsApp real: NO integrado
+        - IA real: NO integrada
+        - Datos reales: NO usados
+        - Migraciones remotas: NO aplicadas
+
 ✅ 29. Auth actualizado: email + password como metodo principal (DECISION-007)
         - app/actions/auth.ts: signInWithPassword() como accion principal; sendMagicLink() como fallback
         - app/login/page.tsx: formulario email + password; credenciales demo visibles en UI
