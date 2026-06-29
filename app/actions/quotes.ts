@@ -724,6 +724,51 @@ export async function createManualQuote(
     }
   }
 
+  // ── Paso 7: Registrar evento de creacion en quote_events ────────────────
+  /*
+   * INTENCION: Insertar el evento inicial 'quote_created' como primera entrada
+   * del timeline de la quote. Toda cotizacion manual tiene al menos un evento
+   * de auditoria desde su creacion.
+   *
+   * VALORES:
+   *   - event_type: 'quote_created' — TEXT libre, no enum.
+   *   - actor: 'producer' — el producer creo la quote desde el formulario.
+   *   - previous_status: null — no habia estado previo (es nueva).
+   *   - new_status: 'pending_follow_up' — estado inicial siempre.
+   *
+   * NOTA SOBRE metadata:
+   *   La tabla quote_events NO tiene columna metadata en el schema v2.0.
+   *   Ver: types/database.ts — quote_events.Row (columnas reales).
+   *
+   * DEGRADACION ELEGANTE:
+   *   Si falla, logueamos pero NO interrumpimos el flujo. La quote ya fue creada.
+   *   Solo el audit log falla — el producer llega al dashboard con la quote visible.
+   *
+   * PATRON 'as any':
+   *   Supabase TS infiere 'never' para .insert() en schemas complejos.
+   *   Identico al patron en app/actions/approvals.ts (event_type = 'message_approved').
+   *
+   * Ver: app/dashboard/quotes/[quoteId]/page.tsx (timeline que muestra este evento)
+   * Ver: docs/04-decisiones/DECISION-005-flujo-seguimiento-whatsapp-mvp.md
+   */
+  const eventResult = await supabase
+    .from('quote_events')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .insert({
+      producer_id: producerId,
+      quote_id: newQuote.id,
+      event_type: 'quote_created',
+      actor: 'producer' as const,
+      previous_status: null,
+      new_status: 'pending_follow_up' as const,
+      description: 'Cotizacion manual creada desde el dashboard local.',
+    } as any)
+
+  if (eventResult.error) {
+    // Error no critico: quote creada bien, solo falla el audit log.
+    console.error('[quotes:createManual] Error insertando evento quote_created — code:', eventResult.error.code)
+  }
+
   /*
    * EXITO: redirect a la lista de cotizaciones.
    *

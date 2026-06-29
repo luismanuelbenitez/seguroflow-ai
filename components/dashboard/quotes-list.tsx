@@ -26,6 +26,7 @@
  * Ver: app/dashboard/quotes/page.tsx (Server Component que usa este componente)
  */
 
+import Link from 'next/link'
 import type { QuotesResult, QuoteWithProspect } from '@/lib/quotes/get-quotes-for-current-producer'
 import { formatQuoteStatus, formatInsuranceType } from '@/lib/quotes/get-quotes-for-current-producer'
 
@@ -176,6 +177,7 @@ export default function QuotesList({ quotesResult }: QuotesListProps) {
               <Th>Monto</Th>
               <Th>Estado</Th>
               <Th>Aseguradora</Th>
+              <Th>Detalle</Th>
             </tr>
           </thead>
           <tbody>
@@ -320,6 +322,31 @@ function QuoteRow({ quote, isEven }: { quote: QuoteWithProspect; isEven: boolean
       {/* Aseguradora — puede ser null */}
       <td style={{ ...tdStyle, color: '#6b7280' }}>
         {quote.insurer_name ?? <span style={{ color: '#d1d5db' }}>—</span>}
+      </td>
+
+      {/*
+       * Link al detalle de la cotizacion.
+       * La ruta dinamica /dashboard/quotes/[quoteId] muestra datos completos
+       * (approved_message, internal_notes) y el timeline de quote_events.
+       */}
+      <td style={tdStyle}>
+        <Link
+          href={`/dashboard/quotes/${quote.id}`}
+          style={{
+            display: 'inline-block',
+            padding: '0.2rem 0.6rem',
+            background: '#f0f9ff',
+            color: '#0369a1',
+            border: '1px solid #bae6fd',
+            borderRadius: '4px',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            textDecoration: 'none',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Ver →
+        </Link>
       </td>
     </tr>
   )

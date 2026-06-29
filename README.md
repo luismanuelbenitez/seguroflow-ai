@@ -317,6 +317,49 @@ Ver: `docs/05-architecture/DATA_MODEL.md` — sección "Relación flujo-modelo d
 
 ---
 
+## Vista de detalle de cotizacion con timeline
+
+La ruta `/dashboard/quotes/[quoteId]` muestra el detalle completo de una cotizacion
+con el historial de eventos (`quote_events`) en orden cronologico.
+
+**Acceso:**
+- Desde `/dashboard/quotes` → columna "Detalle" → "Ver →" por cada fila
+- Desde `/dashboard/approvals` → "Ver timeline →" en cada tarjeta
+
+**Contenido de la vista:**
+
+| Seccion | Descripcion |
+|---|---|
+| Encabezado | Nombre del prospect, tipo de seguro, badge de estado, link a cola de aprobacion si es elegible |
+| Cotizacion | Tipo, fecha, monto, aseguradora, descripcion, fechas de vencimiento y seguimiento |
+| Prospecto | Nombre, telefono, email, consentimiento, estado de opt-out |
+| Mensaje aprobado | Texto de `quotes.approved_message` si existe (modo MVP local) |
+| Notas internas | `quotes.internal_notes` si existen |
+| Timeline | Historial cronologico de `quote_events` con tipo, actor, transicion de estado y descripcion |
+
+**Seguridad:**
+- Si la quote no existe o pertenece a otro producer → "Cotizacion no encontrada" (sin revelar si existe en otro producer — previene information disclosure)
+- Doble barrera: `producer_id` en la query + RLS en Supabase
+
+**Nota sobre `quote_events`:**
+- La tabla es **append-only** — no hay UPDATE ni DELETE
+- El schema v2.0 NO tiene columna `metadata` en `quote_events`
+- Columnas reales del timeline: `event_type`, `actor`, `previous_status`, `new_status`, `description`, `created_at`
+- Event types conocidos: `quote_created` (desde cotizacion manual), `message_approved` (desde cola de aprobacion)
+
+**Evento de creacion en cotizaciones manuales:**
+Desde el Paso 20, `createManualQuote()` registra un evento `quote_created` en `quote_events`
+cuando se crea una cotizacion. Las cotizaciones creadas antes de este paso no tienen
+evento de creacion — su timeline estara vacio hasta que ocurra el primer `message_approved`.
+
+**Lo que NO hace:**
+- No envía mensajes WhatsApp
+- No integra IA
+- No usa service role
+- No aplica migraciones remotas
+
+---
+
 ## Supabase — seguridad de entorno
 
 Este repo apunta **exclusivamente** al proyecto Supabase `seguroflow-ai` (ref: `fawlbfkkxufyhnghynjk`).

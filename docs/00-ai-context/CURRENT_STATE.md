@@ -8,8 +8,8 @@
 
 ## Estado general
 
-**Fase:** Cola local de aprobación implementada en /dashboard/approvals. Plantilla estática M1 sin IA. Aprobación registrada en quotes + quote_events.
-**Progreso:** Formulario en /dashboard/quotes/new con 10 campos, validacion E.164, deduplicacion de prospect por (producer_id, phone), Server Action createManualQuote() con redirect en exito. DECISION-004 aplicada: sin quote_reference (no existe en schema), usando risk_description para referencia textual. No hay nuevas migraciones. npm run build exitoso. supabase db push sigue prohibido.
+**Fase:** Vista de detalle de cotizacion con timeline de quote_events implementada en /dashboard/quotes/[quoteId].
+**Progreso:** Cola de aprobacion + detalle de cotizacion + timeline cronologico de eventos. createManualQuote() ahora registra evento quote_created en quote_events. Links "Ver →" en lista de quotes, "Ver timeline →" en approvals. No hay nuevas migraciones. npm run build exitoso. supabase db push sigue prohibido.
 
 **Usuario demo local:** demo@seguroflow.local (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1 — valido solo en la DB local actual)
 
@@ -217,12 +217,27 @@
         - GAP documentado: approved_responses no tiene quote_id → se usa quotes.approved_message
         - Bug Supabase TS: .update({...} as any) no funciona → castear supabase.from('quotes') as any
         - npm run build: exitoso (11 rutas generadas)
-   20. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
-   21. Implementar timeline de eventos de cotizacion (quote_events log en el dashboard)
+✅ 20. Vista de detalle de cotizacion con timeline de eventos: /dashboard/quotes/[quoteId]
+        - lib/quotes/get-quote-detail.ts: helper con 3 queries separadas (quote + prospect + events)
+          Retorna discriminated union: notFound / success / error
+          quote_events NO tiene columna metadata (documentado, columna no existe en schema v2.0)
+          Doble barrera de propiedad: producer_id en query + RLS
+        - app/dashboard/quotes/[quoteId]/page.tsx: ruta dinamica Next.js 15 (params es Promise)
+          Timeline cronologico con dot de color por categoria, actor badge, transicion de estado
+          Muestra approved_message e internal_notes (omitidos en la lista general)
+          notFound → "no encontrada" sin revelar si existe en otro producer (info disclosure)
+        - app/actions/quotes.ts: createManualQuote() ahora inserta evento quote_created en quote_events
+          Degradacion elegante: si falla el INSERT de evento, la quote se creo igual (solo falla el audit log)
+          actor='producer', previous_status=null, new_status='pending_follow_up'
+        - components/dashboard/quotes-list.tsx: columna "Detalle" con link "Ver →" por fila
+        - app/dashboard/approvals/page.tsx: link "Ver timeline →" en cada tarjeta de aprobacion
+        - README.md: seccion "Vista de detalle de cotizacion con timeline"
+        - CURRENT_STATE.md: este archivo
+        - npm run build: pendiente de verificacion
+   21. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
    22. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
-   19. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
-   20. Carga de cotizaciones reales (formulario o CSV) — ver DECISION pendiente
-   21. Iniciar implementacion MVP-01 (deteccion de cotizaciones, envio de mensajes)
+   23. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
+   24. Iniciar implementacion MVP-01 (deteccion de cotizaciones, envio de mensajes)
 ```
 
 ---

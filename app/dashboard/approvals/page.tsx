@@ -349,7 +349,7 @@ export default async function ApprovalsPage() {
                     </p>
                   </div>
 
-                  {/* Badges de estado */}
+                  {/* Badges de estado + link al detalle */}
                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     <span
                       style={{
@@ -376,6 +376,28 @@ export default async function ApprovalsPage() {
                     >
                       {formatQuoteStatus(item.quoteStatus)}
                     </span>
+
+                    {/*
+                     * Link al timeline de eventos de esta cotizacion.
+                     * Lleva a /dashboard/quotes/[quoteId] donde se muestra el
+                     * historial completo de quote_events y los datos del prospect.
+                     */}
+                    <Link
+                      href={`/dashboard/quotes/${item.quoteId}`}
+                      style={{
+                        padding: '0.2rem 0.5rem',
+                        background: '#f8fafc',
+                        color: '#475569',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '12px',
+                        fontSize: '0.72rem',
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Ver timeline →
+                    </Link>
                   </div>
                 </div>
 
