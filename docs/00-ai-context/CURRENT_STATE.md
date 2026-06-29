@@ -8,8 +8,8 @@
 
 ## Estado general
 
-**Fase:** Quotes demo local implementado. Dashboard con lista de cotizaciones y creacion demo funcionando.
-**Progreso:** Seed local ejecutado y verificado (producer + membership en DB local). Pantalla /dashboard/quotes con lista de quotes, boton "Crear cotizacion demo local" (Server Action idempotente), y navegacion desde /dashboard. Migracion 002 con GRANTs (bug fix DML). RLS verificado. npm run build exitoso. Migraciones aplicadas solo localmente (NO remotamente). supabase db push sigue prohibido sin confirmacion humana.
+**Fase:** DECISION-004 tomada. Estrategia de ingesta de cotizaciones definida: formulario manual primero, CSV post-piloto.
+**Progreso:** Seed local ejecutado y verificado. Pantalla /dashboard/quotes con lista de quotes y creacion demo funcionando. DECISION-004 documenta la decision de ingesta: formulario manual para el MVP, CSV diferido. No hay nuevas migraciones — todos los campos necesarios existen en el schema v2.0. npm run build exitoso. supabase db push sigue prohibido.
 
 **Usuario demo local:** demo@seguroflow.local (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1 — valido solo en la DB local actual)
 
@@ -70,6 +70,7 @@
 | 001 | Arrancar con documentación completa antes de cualquier línea de código | 2026-06-28 |
 | 002 | Stack: Next.js + TypeScript + Supabase + Claude + Twilio sandbox + Vercel + Docker | 2026-06-28 |
 | 003 | Multi-tenant: producer_id ≠ auth.uid(). Tres tablas: profiles, producers, producer_members | 2026-06-28 |
+| 004 | Ingesta de cotizaciones MVP: formulario manual primero. CSV diferido a fase post-piloto | 2026-06-29 |
 | — | MVP es el Recuperador de Cotizaciones por WhatsApp, no una suite completa | 2026-06-28 |
 | — | La IA asiste y escala; no emite, no promete cobertura, no interpreta pólizas | 2026-06-28 |
 | — | Capa de abstracción LLM obligatoria: el código de negocio no llama a Anthropic directamente | 2026-06-28 |
@@ -173,8 +174,17 @@
         - README.md: seccion "Cotizaciones demo locales"
         - Flujo: login → /dashboard → /dashboard/quotes → crear demo → ver en lista
         - No envia WhatsApp, no usa IA, no usa service role, no usa datos reales
-   16. Carga de cotizaciones reales: formulario manual o CSV (decision pendiente en CURRENT_STATE.md)
-   17. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
+✅ 16. DECISION-004: Estrategia de ingesta de cotizaciones definida
+        - Formulario manual primero (1-2 dias de implementacion)
+        - CSV diferido a fase post-piloto (modelo de campos no validado aun)
+        - No requiere nuevas migraciones (todos los campos en schema v2.0)
+        - Documenta campos minimos, reglas PII, nota legal sobre consentimiento
+   17. Formulario manual de carga de cotizaciones: /dashboard/quotes/new
+        - Server Action createQuote() en app/actions/quotes.ts
+        - Validacion server-side: full_name, phone (E.164), insurance_type
+        - Deduplicacion de prospect por (producer_id, phone)
+        - Redireccion a /dashboard/quotes post-submit
+   18. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
    18. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
    19. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
    20. Carga de cotizaciones reales (formulario o CSV) — ver DECISION pendiente

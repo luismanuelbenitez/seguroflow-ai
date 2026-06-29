@@ -117,4 +117,39 @@ Nomenclatura de tablas: **inglés** en `snake_case`.
 
 ---
 
-*Próximas decisiones pendientes: proveedor WABA definitivo, retención de datos, gestión de secrets para multi-productor.*
+---
+
+## [DECISION-004] Estrategia de ingesta de cotizaciones para el MVP
+
+- **Fecha:** 2026-06-29
+- **Estado:** Aceptada
+- **Documento completo:** [DECISION-004-ingesta-cotizaciones-mvp.md](DECISION-004-ingesta-cotizaciones-mvp.md)
+
+### Contexto
+
+El MVP-01 requiere que el producer pueda ingresar cotizaciones (prospects + quotes)
+al sistema. Dos opciones evaluadas: formulario manual web o carga de CSV.
+
+### Opciones consideradas
+
+1. **Formulario manual** — campo a campo, validación en tiempo real, 1-2 días de implementación.
+2. **CSV upload** — carga masiva, mapeo de columnas, 5-10 días de implementación, riesgo PII.
+
+### Decisión tomada
+
+**Formulario manual primero.** CSV queda como fase post-piloto.
+
+Razones: el formulario valida el modelo de campos con productores reales antes de
+construir un importador. El piloto requiere 10-50 cotizaciones — volumen manejable a mano.
+La superficie de exposición de PII es menor campo a campo que en un archivo CSV masivo.
+
+### Consecuencias
+
+- Se puede implementar `/dashboard/quotes/new` con Server Action `createQuote()`.
+- El onboarding del producer piloto puede completarse en la sesión inicial.
+- El CSV queda diferido hasta que el modelo de campos esté validado con productores reales.
+- No se requieren nuevas migraciones: todos los campos necesarios existen en el schema v2.0.
+
+---
+
+*Próximas decisiones pendientes: proveedor WABA definitivo, retención de datos, gestión de secrets para multi-productor, campo quote_reference (agregar columna o usar campos existentes).*
