@@ -46,11 +46,12 @@
  */
 
 import { useActionState } from 'react'
-import {
-  createManualQuote,
-  MANUAL_QUOTE_INITIAL_STATE,
-  type ManualQuoteResult,
-} from '@/app/actions/quotes'
+import { createManualQuote, type ManualQuoteResult } from '@/app/actions/quotes'
+
+const MANUAL_QUOTE_INITIAL_STATE: ManualQuoteResult = {
+  message: '',
+  isError: false,
+}
 
 // ============================================================
 // Estilos reutilizables (objetos inline para no depender de CSS global)

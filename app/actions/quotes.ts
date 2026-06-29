@@ -75,10 +75,8 @@ export type ManualQuoteResult = {
  * Estado inicial para useActionState en el componente QuoteForm.
  * message vacio = sin feedback todavia.
  */
-export const MANUAL_QUOTE_INITIAL_STATE: ManualQuoteResult = {
-  message: '',
-  isError: false,
-}
+// MANUAL_QUOTE_INITIAL_STATE se define en components/dashboard/quote-form.tsx
+// No puede exportarse desde 'use server' — solo async functions son exportables.
 
 // ============================================================
 // Helpers de validacion (privados a este modulo)
