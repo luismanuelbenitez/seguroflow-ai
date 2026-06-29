@@ -197,6 +197,26 @@ export default async function QuotesPage() {
           </Link>
 
           {/*
+           * Acceso rapido a la cola de aprobacion desde la lista de cotizaciones.
+           * Separa el flujo de ver/crear cotizaciones del flujo de aprobar mensajes.
+           */}
+          <Link
+            href="/dashboard/approvals"
+            style={{
+              display: 'inline-block',
+              padding: '0.5rem 1rem',
+              background: '#059669',
+              color: '#fff',
+              borderRadius: '6px',
+              fontSize: '0.88rem',
+              fontWeight: 600,
+              textDecoration: 'none',
+            }}
+          >
+            Cola de aprobacion
+          </Link>
+
+          {/*
            * Herramientas de desarrollo — separadas del flujo real.
            * CreateDemoQuoteButton sigue disponible para seed rapido en local.
            */}

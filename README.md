@@ -260,6 +260,63 @@ Ver: `docs/04-decisiones/DECISION-004-ingesta-cotizaciones-mvp.md`
 
 ---
 
+## Cola local de aprobación
+
+La pantalla `/dashboard/approvals` muestra las cotizaciones que están listas para
+que el producer revise y apruebe el mensaje de seguimiento inicial (M1).
+
+**Requisitos previos:**
+- Login local con magic link (Mailpit: `http://localhost:54324`)
+- Seed local ejecutado (producer + membership — ver sección anterior)
+- Al menos una cotización creada con estado `pending_follow_up`, `scheduled` o `pending_approval`
+
+**Flujo:**
+
+```
+/login → /dashboard → "Cola de aprobación" → /dashboard/approvals
+```
+
+O desde cotizaciones:
+
+```
+/dashboard/quotes → "Cola de aprobación" → /dashboard/approvals
+```
+
+**Qué hace la cola de aprobación:**
+
+1. Lista cotizaciones en estado `pending_follow_up`, `scheduled` o `pending_approval`
+2. Para cada cotización, muestra los datos del prospecto y la cotización
+3. Genera un mensaje M1 sugerido con plantilla estática (sin IA)
+4. El producer puede editar el texto antes de aprobar
+5. Al aprobar:
+   - Guarda el texto en `quotes.approved_message`
+   - Cambia el estado a `pending_approval` (si venía de `pending_follow_up` o `scheduled`)
+   - Registra el evento en `quote_events` con `event_type = 'message_approved'`
+
+**Plantilla del mensaje M1:**
+
+El texto sugerido se genera en `lib/messages/templates.ts` con las variables:
+- Nombre del prospecto (primer nombre)
+- Nombre del producer (`contact_name`)
+- Tipo de seguro en español
+- Descripción del riesgo (si existe)
+- Monto y moneda (si existen)
+
+**Lo que NO hace:**
+- No envía mensajes por WhatsApp (sin integración WABA)
+- No integra IA (plantilla estática)
+- No usa datos reales
+- No aplica migraciones remotas (`supabase db push`)
+- No usa el service role key en el frontend
+
+**Nota sobre `approved_responses`:**
+La tabla `approved_responses` está diseñada para el banco de FAQs del producer
+(respuestas a preguntas frecuentes del prospecto), no para aprobaciones por cotización.
+La columna correcta para el texto aprobado de M1 es `quotes.approved_message`.
+Ver: `docs/05-architecture/DATA_MODEL.md` — sección "Relación flujo-modelo de datos".
+
+---
+
 ## Supabase — seguridad de entorno
 
 Este repo apunta **exclusivamente** al proyecto Supabase `seguroflow-ai` (ref: `fawlbfkkxufyhnghynjk`).

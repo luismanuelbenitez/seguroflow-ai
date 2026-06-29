@@ -8,7 +8,7 @@
 
 ## Estado general
 
-**Fase:** Flujo de seguimiento WhatsApp definido documentalmente (DECISION-005). Formulario manual de cotizaciones implementado y funcional.
+**Fase:** Cola local de aprobación implementada en /dashboard/approvals. Plantilla estática M1 sin IA. Aprobación registrada en quotes + quote_events.
 **Progreso:** Formulario en /dashboard/quotes/new con 10 campos, validacion E.164, deduplicacion de prospect por (producer_id, phone), Server Action createManualQuote() con redirect en exito. DECISION-004 aplicada: sin quote_reference (no existe en schema), usando risk_description para referencia textual. No hay nuevas migraciones. npm run build exitoso. supabase db push sigue prohibido.
 
 **Usuario demo local:** demo@seguroflow.local (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1 — valido solo en la DB local actual)
@@ -202,9 +202,24 @@
         - USER_FLOWS.md actualizado: Flujo 8 "Recuperacion manual asistida de cotizacion" con diagrama completo
         - DATA_MODEL.md actualizado: nueva seccion conceptual flujo-modelo de datos
         - DECISION-LOG.md actualizado: entrada DECISION-005
-   19. Implementar UI de cola de aprobacion: /dashboard/quotes con filtro pending_approval
+✅ 19. Cola local de aprobacion de mensajes: /dashboard/approvals
+        - lib/messages/templates.ts: buildInitialFollowUpMessage() — plantilla estatica M1, sin IA
+        - lib/quotes/get-approval-queue.ts: query de quotes en pending_follow_up/scheduled/pending_approval
+        - app/actions/approvals.ts: approveInitialFollowUpMessage() — valida sesion, opt_out, status elegible
+          Actualiza quotes.approved_message + quotes.status → pending_approval
+          Inserta quote_events (event_type='message_approved', actor='producer') para audit trail
+          NO envia WhatsApp, NO llama IA, NO usa service role, NO usa datos reales
+        - components/dashboard/approval-form.tsx: Client Component con useActionState, textarea editable
+        - app/dashboard/approvals/page.tsx: Server Component con auth guard + lista de tarjetas
+        - app/dashboard/page.tsx: link "Cola de aprobacion" visible si hasProducer
+        - app/dashboard/quotes/page.tsx: link "Cola de aprobacion" en la barra de acciones
+        - README.md: seccion "Cola local de aprobacion"
+        - GAP documentado: approved_responses no tiene quote_id → se usa quotes.approved_message
+        - Bug Supabase TS: .update({...} as any) no funciona → castear supabase.from('quotes') as any
+        - npm run build: exitoso (11 rutas generadas)
    20. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
-   21. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
+   21. Implementar timeline de eventos de cotizacion (quote_events log en el dashboard)
+   22. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
    19. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
    20. Carga de cotizaciones reales (formulario o CSV) — ver DECISION pendiente
    21. Iniciar implementacion MVP-01 (deteccion de cotizaciones, envio de mensajes)

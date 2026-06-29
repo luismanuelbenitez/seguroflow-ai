@@ -85,43 +85,89 @@ export default async function DashboardPage() {
        * Si no tiene producer, el usuario ya ve el estado vacio en ProducerSummaryCard.
        */}
       {ctx.hasProducer && (
-        <section
-          style={{
-            background: '#fff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            padding: '1.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '1rem',
-          }}
-        >
-          <div>
-            <p style={{ margin: '0 0 0.25rem', fontWeight: 600, color: '#374151', fontSize: '0.9rem' }}>
-              Cotizaciones
-            </p>
-            <p style={{ margin: 0, color: '#6b7280', fontSize: '0.82rem' }}>
-              Lista de cotizaciones en seguimiento del producer
-            </p>
-          </div>
-          <Link
-            href="/dashboard/quotes"
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {/* Acceso rapido: Cotizaciones */}
+          <section
             style={{
-              display: 'inline-block',
-              padding: '0.5rem 1rem',
-              background: '#2563eb',
-              color: '#fff',
-              borderRadius: '6px',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              textDecoration: 'none',
+              background: '#fff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              padding: '1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1rem',
             }}
           >
-            Ver cotizaciones demo
-          </Link>
-        </section>
+            <div>
+              <p style={{ margin: '0 0 0.25rem', fontWeight: 600, color: '#374151', fontSize: '0.9rem' }}>
+                Cotizaciones
+              </p>
+              <p style={{ margin: 0, color: '#6b7280', fontSize: '0.82rem' }}>
+                Lista de cotizaciones en seguimiento del producer
+              </p>
+            </div>
+            <Link
+              href="/dashboard/quotes"
+              style={{
+                display: 'inline-block',
+                padding: '0.5rem 1rem',
+                background: '#2563eb',
+                color: '#fff',
+                borderRadius: '6px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              Ver cotizaciones
+            </Link>
+          </section>
+
+          {/*
+           * Acceso rapido: Cola de aprobacion.
+           * Muestra cotizaciones en pending_follow_up / scheduled / pending_approval
+           * listas para que el producer apruebe el mensaje M1 antes de enviarlo.
+           */}
+          <section
+            style={{
+              background: '#fff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              padding: '1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1rem',
+            }}
+          >
+            <div>
+              <p style={{ margin: '0 0 0.25rem', fontWeight: 600, color: '#374151', fontSize: '0.9rem' }}>
+                Cola de aprobacion
+              </p>
+              <p style={{ margin: 0, color: '#6b7280', fontSize: '0.82rem' }}>
+                Revisa y aprueba los mensajes M1 de seguimiento antes de enviarlos
+              </p>
+            </div>
+            <Link
+              href="/dashboard/approvals"
+              style={{
+                display: 'inline-block',
+                padding: '0.5rem 1rem',
+                background: '#059669',
+                color: '#fff',
+                borderRadius: '6px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              Cola de aprobacion
+            </Link>
+          </section>
+        </div>
       )}
 
       {/*
@@ -157,7 +203,8 @@ export default async function DashboardPage() {
           }}
         >
           <li>✅ Listar cotizaciones demo en /dashboard/quotes</li>
-          <li>Carga de cotizaciones reales (formulario o CSV)</li>
+          <li>✅ Carga manual de cotizaciones en /dashboard/quotes/new</li>
+          <li>✅ Cola de aprobacion local en /dashboard/approvals</li>
           <li>Ver prospectos del producer (tabla <code>prospects</code>)</li>
           <li>Panel de handoffs pendientes (tabla <code>human_handoffs</code>)</li>
           <li>Integracion WhatsApp sandbox (Twilio) para mensajes de seguimiento</li>
