@@ -96,10 +96,8 @@ export type InboundResult = {
 /**
  * Estado inicial para useActionState en SimulateInboundForm.
  */
-export const INBOUND_INITIAL_STATE: InboundResult = {
-  message: '',
-  isError: false,
-}
+// INBOUND_INITIAL_STATE se define en components/dashboard/simulate-inbound-form.tsx
+// No puede exportarse desde 'use server' — solo async functions son exportables.
 
 // ============================================================
 // Tipos locales para queries

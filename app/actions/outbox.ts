@@ -99,11 +99,8 @@ export type SimulateResult = {
  * Estado inicial para useActionState en SimulateSendButton.
  * message vacio = sin feedback todavia.
  */
-export const SIMULATE_INITIAL_STATE: SimulateResult = {
-  message: '',
-  isError: false,
-  failedQuoteId: null,
-}
+// SIMULATE_INITIAL_STATE se define en components/dashboard/simulate-send-button.tsx
+// No puede exportarse desde 'use server' — solo async functions son exportables.
 
 // ============================================================
 // Tipos locales para queries

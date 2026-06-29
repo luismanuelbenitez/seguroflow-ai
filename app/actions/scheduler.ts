@@ -92,7 +92,9 @@ export type SchedulerResult = {
 /**
  * Estado inicial para useActionState en RunSchedulerButton.
  */
-export const SCHEDULER_INITIAL_STATE: SchedulerResult = {
+// No exportado: 'use server' solo permite async functions como exports.
+// Una copia se define en components/dashboard/run-scheduler-button.tsx.
+const SCHEDULER_INITIAL_STATE: SchedulerResult = {
   ran: false,
   message: '',
   isError: false,

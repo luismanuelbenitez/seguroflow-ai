@@ -86,11 +86,8 @@ export type ApprovalActionResult = {
   failedQuoteId: string | null
 }
 
-export const APPROVAL_INITIAL_STATE: ApprovalActionResult = {
-  message: '',
-  isError: false,
-  failedQuoteId: null,
-}
+// APPROVAL_INITIAL_STATE se define en components/dashboard/approval-form.tsx
+// No puede exportarse desde 'use server' — solo async functions son exportables.
 
 // ============================================================
 // Constantes de validacion

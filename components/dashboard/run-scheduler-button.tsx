@@ -24,7 +24,16 @@
  */
 
 import { useActionState } from 'react'
-import { runLocalScheduler, SCHEDULER_INITIAL_STATE } from '@/app/actions/scheduler'
+import { runLocalScheduler, type SchedulerResult } from '@/app/actions/scheduler'
+
+const SCHEDULER_INITIAL_STATE: SchedulerResult = {
+  ran: false,
+  message: '',
+  isError: false,
+  processedCount: 0,
+  skippedOptOutCount: 0,
+  errorIds: [],
+}
 
 // ============================================================
 // Componente

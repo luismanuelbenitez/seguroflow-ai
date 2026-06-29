@@ -24,10 +24,13 @@
  */
 
 import { useActionState } from 'react'
-import {
-  simulateSendApprovedMessage,
-  SIMULATE_INITIAL_STATE,
-} from '@/app/actions/outbox'
+import { simulateSendApprovedMessage, type SimulateResult } from '@/app/actions/outbox'
+
+const SIMULATE_INITIAL_STATE: SimulateResult = {
+  message: '',
+  isError: false,
+  failedQuoteId: null,
+}
 
 // ============================================================
 // Tipos de props

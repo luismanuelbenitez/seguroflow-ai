@@ -34,10 +34,12 @@
  */
 
 import { useActionState } from 'react'
-import {
-  simulateInboundResponse,
-  INBOUND_INITIAL_STATE,
-} from '@/app/actions/inbound'
+import { simulateInboundResponse, type InboundResult } from '@/app/actions/inbound'
+
+const INBOUND_INITIAL_STATE: InboundResult = {
+  message: '',
+  isError: false,
+}
 import { INBOUND_SCENARIOS } from '@/lib/messages/inbound-scenarios'
 
 /*

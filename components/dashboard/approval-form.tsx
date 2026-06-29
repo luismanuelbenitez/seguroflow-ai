@@ -46,8 +46,14 @@
 import { useActionState } from 'react'
 import {
   approveInitialFollowUpMessage,
-  APPROVAL_INITIAL_STATE,
+  type ApprovalActionResult,
 } from '@/app/actions/approvals'
+
+const APPROVAL_INITIAL_STATE: ApprovalActionResult = {
+  message: '',
+  isError: false,
+  failedQuoteId: null,
+}
 
 // ============================================================
 // Props
