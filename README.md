@@ -12,8 +12,9 @@ Ser una capa de IA operativa/comercial para el mercado asegurador uruguayo y reg
 
 ## Estado
 
-Skeleton tecnico inicial. Documentacion completa, migracion de DB generada.
-Pendiente: validacion local de la migracion + instalacion de dependencias.
+Skeleton tecnico validado. Next.js 15 + TypeScript buildea limpio.
+Migracion 001 validada con supabase db reset local. Tipos generados.
+Proximo paso: implementar Auth (login/logout) y primer modulo MVP-01.
 
 ---
 
@@ -55,10 +56,10 @@ npm install
 cp .env.example .env.local
 # Completar .env.local con los valores reales (nunca commitear .env.local)
 
-# 3. Validar la migracion en entorno local
-# Requiere Supabase CLI instalado: npm install -g supabase
-supabase start
-supabase db push
+# 3. Validar la migracion en entorno local (requiere Docker Desktop)
+# Requiere Supabase CLI: npx supabase@2.108.0 [comando]
+npx supabase@2.108.0 start
+npx supabase@2.108.0 db reset   # Aplica migraciones localmente (NO a produccion)
 
 # 4. Iniciar servidor de desarrollo
 npm run dev
