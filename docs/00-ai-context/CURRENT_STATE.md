@@ -8,8 +8,10 @@
 
 ## Estado general
 
-**Fase:** Seed local de demo disponible. Dashboard con verificacion de producer_members.
-**Progreso:** Auth magic link + dashboard con contexto de producer. Seed local de ejemplo creado (seed.local.example.sql) — no ejecutado automaticamente, requiere reemplazo manual de LOCAL_AUTH_USER_ID. Pagina /dev/user para obtener el UUID del usuario local. Migracion 001 validada solo localmente (NO aplicada remotamente). supabase db push sigue prohibido sin confirmacion humana.
+**Fase:** Seed local validado. Dashboard con producer demo funcionando.
+**Progreso:** Seed local ejecutado y verificado (producer + membership en DB local). Migracion 002 con GRANTs creada (bug fix: migracion 001 no tenia permisos DML para el rol authenticated — PostgREST retornaba permission denied). RLS verificado via REST API: authenticated solo ve sus propios datos. npm run build exitoso. migraciones aplicadas solo localmente (NO remotamente). supabase db push sigue prohibido sin confirmacion humana.
+
+**Usuario demo local:** demo@seguroflow.local (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1 — valido solo en la DB local actual)
 
 ---
 
@@ -104,9 +106,9 @@
 | Proyecto permitido | `seguroflow-ai` |
 | Project ref permitido | `fawlbfkkxufyhnghynjk` |
 | Proyecto PROHIBIDO | `TuHoroscopoCosmico.com` — nunca tocar desde este repo |
-| Estado de migracion remota | **NO aplicada** — solo validada localmente con `db reset` |
+| Estado de migracion remota | **NO aplicada** — migraciones 001 y 002 validadas solo localmente |
 | `supabase db push` | PROHIBIDO sin confirmacion humana explicita + verificacion de project-ref |
-| Proximo paso Supabase | Seed local ejecutado manualmente por el desarrollador. No remoto. La migracion remota espera hasta tener el proyecto cloud configurado. |
+| Proximo paso Supabase | Migraciones 001 y 002 listas para produccion cuando se configure el proyecto cloud. |
 
 ---
 
@@ -147,20 +149,27 @@
         - components/dashboard/dashboard-shell.tsx (layout con header + logout)
         - components/dashboard/producer-summary-card.tsx (producer info o estado vacio)
         - app/dashboard/page.tsx actualizado con contexto de producer
-✅ 13. Seed local de producer demo (manual, no automatico)
+✅ 13. Seed local de producer demo ejecutado y validado
         - supabase/seed.local.example.sql (ejemplo con ON CONFLICT, requiere reemplazar LOCAL_AUTH_USER_ID)
         - app/dev/user/page.tsx (pagina dev-only para obtener el user.id del usuario autenticado)
         - docs/05-architecture/LOCAL_SEEDING.md (guia completa del flujo de seed)
         - README.md actualizado con seccion "Seed local de producer demo"
-        - El seed NO se ejecuta automaticamente — requiere intervencion manual del desarrollador
-        - El seed NO ejecuta supabase db push — solo afecta la DB local de Docker
-   14. Ejecutar el seed local: reemplazar LOCAL_AUTH_USER_ID + ejecutar en Supabase Studio
-        (ver docs/05-architecture/LOCAL_SEEDING.md para el flujo completo)
-   15. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
-   16. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
-   17. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
-   18. Listar cotizaciones (quotes) y prospectos (prospects) en dashboard
-   19. Iniciar implementacion MVP-01 (deteccion de cotizaciones, envio de mensajes)
+        - Seed ejecutado: producer '00000000-0000-0000-0000-000000001001' + membership para user 491e5a58...
+        - RLS verificado via REST API: authenticated solo ve sus propios datos
+        - El seed NO ejecuto supabase db push — solo afecta la DB local de Docker
+✅ 14. Migracion 002_grants.sql creada (bug fix critico)
+        - Migracion 001 no incluia GRANT statements
+        - CLI supabase 2.x tiene auto_expose_new_tables=false por defecto
+        - Sin GRANTs, el rol authenticated no podia hacer SELECT/INSERT/UPDATE/DELETE
+        - Solucion: migracion 002 con GRANTs explicitos para authenticated y service_role
+        - Aplicada localmente con supabase db reset (NO remotamente)
+   15. Pantalla inicial de cotizaciones: listar quotes del producer demo en /dashboard
+        (requiere seed de quotes demo o formulario de carga manual)
+   16. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
+   17. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
+   18. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
+   19. Listar cotizaciones (quotes) y prospectos (prospects) en dashboard
+   20. Iniciar implementacion MVP-01 (deteccion de cotizaciones, envio de mensajes)
 ```
 
 ---
