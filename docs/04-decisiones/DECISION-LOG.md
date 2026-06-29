@@ -202,5 +202,60 @@ siempre una acción manual, nunca disparada por el sistema.
 
 ---
 
-*Próximas decisiones pendientes: proveedor WABA definitivo, número WABA del piloto,
-retención de datos, gestión de secrets para multi-productor, precio y modelo de cobro.*
+---
+
+## [DECISION-006] Preparación M2 WhatsApp real y piloto controlado
+
+- **Fecha:** 2026-06-29
+- **Estado:** Aceptada (documentación) — proveedor WABA pendiente de decisión final
+- **Documento completo:** [docs/06-integrations/WHATSAPP_REAL_PLAN.md](../06-integrations/WHATSAPP_REAL_PLAN.md)
+
+### Contexto
+
+Con el MVP-01 local completo (flujo simulado + UX de demo), el siguiente paso
+natural es preparar la transición al primer piloto con mensajes WhatsApp reales.
+Antes de escribir una línea de código de integración, hay que tener documentado:
+qué proveedor usar, qué flujo técnico seguir, qué checklist completar, y qué
+criterios legales revisar con un asesor.
+
+### Opciones consideradas
+
+1. **Meta WhatsApp Cloud API directo** — Menor costo a largo plazo. Mayor complejidad
+   de onboarding. Sin sandbox oficial. Requiere deploy real para testear webhooks.
+
+2. **Twilio WhatsApp Sandbox → Producción** — Sandbox inmediato disponible sin
+   aprobación de Meta. SDK oficial TypeScript. Mayor costo por conversación.
+   Path de menor fricción para el primer paso técnico.
+
+3. **360dialog u otro BSP regional** — Similar a Meta directo pero intermediado.
+   Menos documentación. Sin sandbox. No recomendado como primera opción.
+
+### Decisión tomada
+
+**No se decide el proveedor definitivo todavía.** Se documenta el análisis y
+se establece el camino conservador recomendado:
+
+1. Implementar adapter abstracto (`lib/whatsapp/adapter.ts`) para independizar
+   el código de negocio del proveedor.
+2. Validar el flujo técnico completo con **Twilio sandbox** (sin prospectos reales).
+3. Evaluar migrar a Meta Cloud API directo o Twilio producción según el resultado.
+
+**Recomendación tentativa:** Twilio para el piloto inicial, por la disponibilidad
+del sandbox y la madurez del SDK TypeScript. Revisar antes del primer mensaje real.
+
+### Consecuencias
+
+- Se crea `docs/06-integrations/WHATSAPP_REAL_PLAN.md` con análisis de proveedores,
+  flujo técnico M2, variables de entorno y seguridad.
+- Se crea `docs/07-go-to-market/PRE_PILOT_CHECKLIST.md` con checklist operativo,
+  de datos, legal y guion de demo para el producer.
+- **Sin cambios de código ni de migraciones.** Todo lo producido es documentación.
+- **supabase db push sigue prohibido** hasta autorización humana explícita.
+- **TuHoroscopoCosmico.com sigue prohibido** desde este repositorio.
+- Próxima decisión a registrar: DECISION-007 — Proveedor WABA definitivo para piloto.
+
+---
+
+*Próximas decisiones pendientes: proveedor WABA definitivo (DECISION-007), número
+WABA del piloto (central vs. del producer), retención de datos, gestión de secrets
+para multi-productor, precio y modelo de cobro.*

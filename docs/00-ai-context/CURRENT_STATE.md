@@ -10,8 +10,8 @@
 
 ## Estado general
 
-**Fase:** MVP local fase 1 completo + UX de demo comercial implementada.
-**Progreso:** Flujo completo simulado + métricas + polish visual para demo comercial. Listo para mostrar a productor piloto. Sin WhatsApp real. Sin IA. Sin migraciones. supabase db push sigue prohibido. TuHoroscopoCosmico.com sigue prohibido.
+**Fase:** MVP local fase 1 completo + UX de demo comercial + documentación de transición a piloto real.
+**Progreso:** Flujo completo simulado + métricas + polish visual + plan WhatsApp M2 + checklist pre-piloto documentados. Listo para mostrar a productor piloto y tomar la decisión de avanzar a piloto real. Sin WhatsApp real. Sin IA. Sin migraciones. supabase db push sigue prohibido. TuHoroscopoCosmico.com sigue prohibido.
 
 **Usuario demo local:** demo@seguroflow.local (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1 — valido solo en la DB local actual)
 
@@ -50,16 +50,22 @@
 | `DATA_MODEL.md` | 10 tablas en inglés, multi-tenant, RLS, enums en inglés, índices, trigger opt-out. Alineado con DECISION-003. | Completo v2.0 |
 | `LOCAL_SEEDING.md` | Guía de seed local: por qué, cómo, flujo completo, métodos de ejecución, restricciones de RLS | Completo |
 
+### `/docs/06-integrations/` — Integraciones
+| Archivo | Contenido | Estado |
+|---|---|---|
+| `WHATSAPP_REAL_PLAN.md` | Plan técnico de integración WhatsApp real (M2): proveedores, flujo, variables de entorno, seguridad | Completo |
+
 ### `/docs/07-go-to-market/` — Salida al mercado
 | Archivo | Contenido | Estado |
 |---|---|---|
 | `PILOT_PLAN.md` | Plan de 30 días con productores piloto, métricas, contingencias, precio | Completo |
 | `DISCOVERY_QUESTIONS.md` | 32 preguntas para entrevistar productores antes de programar | Completo |
+| `PRE_PILOT_CHECKLIST.md` | Checklist pre-piloto: requisitos técnicos, datos, legales, guion de demo, criterios de avance | Completo |
 
 ### `/docs/04-decisiones/` — Decisiones técnicas
 | Archivo | Contenido | Estado |
 |---|---|---|
-| `DECISION-LOG.md` | Índice de decisiones — 5 entradas registradas | 5 entradas |
+| `DECISION-LOG.md` | Índice de decisiones — 6 entradas registradas | 6 entradas |
 | `DECISION-002-stack-tecnologico-inicial.md` | Stack completo: Next.js, Supabase, Claude, Twilio, Vercel, Docker | Completo |
 | `DECISION-003-multitenant-rls.md` | Modelo multi-tenant: profiles, producers, producer_members, RLS, opt-out, service role | Completo |
 | `DECISION-004-ingesta-cotizaciones-mvp.md` | Formulario manual primero, CSV post-piloto | Completo |
@@ -76,6 +82,7 @@
 | 003 | Multi-tenant: producer_id ≠ auth.uid(). Tres tablas: profiles, producers, producer_members | 2026-06-28 |
 | 004 | Ingesta de cotizaciones MVP: formulario manual primero. CSV diferido a fase post-piloto | 2026-06-29 |
 | 005 | Flujo de seguimiento WhatsApp: modo manual asistido. 3 mensajes max, aprobacion del producer | 2026-06-29 |
+| 006 | Preparacion M2 WhatsApp real: documentacion de proveedores, flujo tecnico y checklist pre-piloto | 2026-06-29 |
 | — | MVP es el Recuperador de Cotizaciones por WhatsApp, no una suite completa | 2026-06-28 |
 | — | La IA asiste y escala; no emite, no promete cobertura, no interpreta pólizas | 2026-06-28 |
 | — | Capa de abstracción LLM obligatoria: el código de negocio no llama a Anthropic directamente | 2026-06-28 |
@@ -333,6 +340,32 @@
         - IA real: NO integrada
         - db push: NO ejecutado
         - TuHoroscopoCosmico.com: NO tocado
+✅ 26. Documentacion de transicion a piloto real — M2 WhatsApp + checklist pre-piloto
+        - docs/06-integrations/WHATSAPP_REAL_PLAN.md:
+          Analisis comparativo de 3 proveedores (Meta, Twilio, 360dialog) con pros/contras/riesgos
+          Flujo tecnico propuesto M2: desde quote pending_approval hasta inbound webhook
+          Variables de entorno esperadas (solo nombres, sin valores)
+          Seguridad: firma webhook, validacion producer/prospect, idempotencia, opt-out
+          Alcance fuera de M2: IA, clasificacion automatica, multi-provider, CSV masivo
+          Recomendacion: adapter abstracto → Twilio sandbox → cloud → templates → piloto real
+        - docs/07-go-to-market/PRE_PILOT_CHECKLIST.md:
+          Objetivo del piloto (3 hipotesis a validar)
+          Perfil ideal del primer producer (chico/mediano, cotiza por WA, pierde seguimiento)
+          Requisitos operativos: infraestructura, proceso, roles
+          Requisitos de datos: volumen inicial, formato E.164, proteccion de datos
+          Requisitos legales [LEGAL]: validar con asesor - Ley 18.331, consentimiento WA,
+            politica de privacidad, opt-out, terminos con el producer, politicas Meta/Twilio
+          Metricas de exito: primarias (cuantitativas) + secundarias (cualitativas)
+          Guion de demo para el producer: 9 pasos con frases sugeridas y puntos clave
+          Criterios para avanzar al piloto real: tecnicos + proceso + legales + negocio
+        - docs/04-decisiones/DECISION-LOG.md: entrada DECISION-006 agregada
+        - CURRENT_STATE.md: este archivo actualizado
+        - db push: NO ejecutado
+        - WhatsApp real: NO integrado
+        - IA: NO integrada
+        - Migraciones: NO tocadas
+        - TuHoroscopoCosmico.com: NO tocado
+        - Datos reales: NO usados
 ✅ 25. UX de demo comercial — polish visual de todas las pantallas del dashboard
         - components/dashboard/dashboard-shell.tsx: header oscuro + sub-nav con 6 secciones
           Fondo #0f172a + logo "SF" en azul + nav bar con links a todas las rutas
@@ -380,11 +413,27 @@
         - IA real: NO integrada
         - db push: NO ejecutado
         - TuHoroscopoCosmico.com: NO tocado
-   26. Entrevistar 3-5 productores (discovery para validacion comercial) → DISCOVERY_QUESTIONS.md
-   27. Documentar plan de integracion WhatsApp real (Twilio sandbox) → docs/06-roadmap/M2-WHATSAPP.md
-   28. Crear cuentas cloud: Supabase proyecto + Anthropic API + Twilio sandbox
-   29. Disenar y enviar templates HSM a Meta (aprobacion tarda 1-7 dias habiles)
-   30. Checklist pre-piloto: productor real, consentimiento LPDP Uruguay 18.331, sandbox WABA
+   Proximos pasos recomendados (elegir uno para la siguiente sesion):
+
+   A) DEMO SCRIPT COMERCIAL — Preparar el guion de presentacion real para un producer
+      (adaptar el guion del PRE_PILOT_CHECKLIST.md a datos mas concretos del piloto)
+
+   B) DECISION PROVEEDOR WHATSAPP — Tomar la decision DECISION-007 sobre proveedor WABA
+      Evaluar: ¿el primer producer piloto ya tiene cuenta Twilio o WABA activo?
+      Implementar el adapter abstracto (lib/whatsapp/adapter.ts) sin integrar todavia
+
+   C) PREPARACION CONTROLADA ENTORNO CLOUD — Iniciar el proceso de Supabase cloud
+      Crear proyecto cloud + verificar project-ref + preparar migraciones para deploy
+      REQUIERE autorizacion humana explicita antes de ejecutar supabase db push
+      Ver SUPABASE_SAFETY_RULES.md antes de cualquier accion
+
+   D) ENTREVISTAS A PRODUCERS — Ejecutar las preguntas de DISCOVERY_QUESTIONS.md con 3-5 producers
+      Objetivo: validar hipotesis y perfil del primer piloto antes de integrar WhatsApp real
+
+   Tareas pendientes de la lista original:
+   27. Crear cuentas cloud: Supabase proyecto + Anthropic API + Twilio sandbox (depende de C)
+   28. Disenar y enviar templates HSM a Meta — 1-7 dias habiles (iniciar en paralelo con C)
+   29. Primer mensaje real de prueba a un numero del equipo (depende de B y C)
 ```
 
 ---
