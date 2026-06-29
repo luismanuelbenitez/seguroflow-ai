@@ -427,28 +427,45 @@ WhatsApp real a un prospecto real.
 
 ---
 
-## Paso previo recomendado: demo guiada con el productor
+## Pasos previos recomendados antes del piloto real
 
-Antes de completar este checklist y avanzar al piloto real, se recomienda
-realizar al menos una demo guiada con el productor usando el sistema local.
+Antes de completar este checklist y avanzar al piloto real, completar primero
+el proceso de discovery comercial:
 
-El guion de demo está documentado en:
-`docs/07-go-to-market/DEMO_SCRIPT_5_MIN.md`
+**1. Contactar productores candidatos**
+Usar los mensajes de `docs/07-go-to-market/OUTREACH_MESSAGES.md`.
+Apuntar a 3-5 entrevistas con el perfil descrito en el DISCOVERY_RUNBOOK.md.
 
-La demo tiene dos objetivos: validar que el flujo tiene sentido para el productor
-(antes de invertir en infraestructura cloud y WhatsApp real), y recopilar
-las respuestas a las preguntas de discovery que informarán el diseño del piloto.
+**2. Conducir la reunión de discovery (30 minutos)**
+Seguir la estructura de `docs/07-go-to-market/DISCOVERY_RUNBOOK.md`.
+Incluye 5 bloques: contexto, proceso actual, demo guiada, feedback, cierre.
 
-No avanzar a los criterios de piloto real sin haber hecho la demo y recibido
-feedback del productor sobre el flujo completo.
+**3. Mostrar la demo durante la reunión**
+Usar `docs/07-go-to-market/DEMO_SCRIPT_5_MIN.md` como guion.
+La demo tiene 8 pasos y termina con una propuesta de piloto.
+
+**4. Registrar el feedback de cada productor**
+Completar una copia de `docs/07-go-to-market/PRODUCER_FEEDBACK_TEMPLATE.md`
+por cada productor entrevistado. Incluye scores 1-5 y decisión recomendada.
+
+**5. Revisar los criterios de decisión**
+Ver sección 8 del DISCOVERY_RUNBOOK.md. Solo avanzar al piloto real si:
+- Al menos 2 de 3 productores confirman dolor fuerte.
+- Al menos 1 acepta piloto controlado.
+- Hay claridad sobre el mensaje M1.
+
+No avanzar a infraestructura cloud ni WhatsApp real sin haber completado el discovery.
 
 ---
 
 ## Referencias
 
+- OUTREACH_MESSAGES.md: mensajes para contactar productores → `docs/07-go-to-market/OUTREACH_MESSAGES.md`
+- DISCOVERY_RUNBOOK.md: runbook de discovery comercial → `docs/07-go-to-market/DISCOVERY_RUNBOOK.md`
 - DEMO_SCRIPT_5_MIN.md: guion de demo comercial de 5 minutos → `docs/07-go-to-market/DEMO_SCRIPT_5_MIN.md`
+- PRODUCER_FEEDBACK_TEMPLATE.md: plantilla de registro por productor → `docs/07-go-to-market/PRODUCER_FEEDBACK_TEMPLATE.md`
+- DISCOVERY_QUESTIONS.md: preguntas de discovery adicionales → `docs/07-go-to-market/DISCOVERY_QUESTIONS.md`
 - WHATSAPP_REAL_PLAN.md: plan técnico de integración → `docs/06-integrations/WHATSAPP_REAL_PLAN.md`
 - PILOT_PLAN.md: plan de 30 días con métricas y contingencias → `docs/07-go-to-market/PILOT_PLAN.md`
-- DISCOVERY_QUESTIONS.md: preguntas de discovery para entrevistar producers → `docs/07-go-to-market/DISCOVERY_QUESTIONS.md`
 - SUPABASE_SAFETY_RULES.md: reglas de migraciones y project-ref → `docs/00-ai-context/SUPABASE_SAFETY_RULES.md`
 - DECISION-005: flujo manual asistido → `docs/04-decisiones/DECISION-005-flujo-seguimiento-whatsapp-mvp.md`

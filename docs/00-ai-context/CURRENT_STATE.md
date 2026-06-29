@@ -10,8 +10,8 @@
 
 ## Estado general
 
-**Fase:** MVP local fase 1 completo + UX de demo comercial + documentación go-to-market lista.
-**Progreso:** Flujo completo simulado + métricas + polish visual + plan WhatsApp M2 + checklist pre-piloto + guion de demo comercial documentados. Listo para ejecutar demos con productores reales y validar la hipótesis comercial. Sin WhatsApp real. Sin IA. Sin migraciones. supabase db push sigue prohibido. TuHoroscopoCosmico.com sigue prohibido.
+**Fase:** MVP local fase 1 completo + paquete go-to-market completo para discovery comercial.
+**Progreso:** Flujo completo simulado + métricas + polish visual + plan WhatsApp M2 + checklist pre-piloto + guion de demo + runbook de discovery + plantilla de feedback + mensajes de outreach. Listo para salir a ejecutar 3-5 entrevistas con productores reales. Sin WhatsApp real. Sin IA. Sin migraciones. supabase db push sigue prohibido. TuHoroscopoCosmico.com sigue prohibido.
 
 **Usuario demo local:** demo@seguroflow.local (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1 — valido solo en la DB local actual)
 
@@ -62,6 +62,9 @@
 | `DISCOVERY_QUESTIONS.md` | 32 preguntas para entrevistar productores antes de programar | Completo |
 | `PRE_PILOT_CHECKLIST.md` | Checklist pre-piloto: requisitos técnicos, datos, legales, guion de demo, criterios de avance | Completo |
 | `DEMO_SCRIPT_5_MIN.md` | Guion comercial de demo de 5 minutos: pitch, pasos, discovery, objeciones, cierre, versión 60s | Completo |
+| `DISCOVERY_RUNBOOK.md` | Runbook de discovery: estructura de 30 min, preguntas pre/post demo, señales positivas/negativas, criterios de decisión para avanzar a piloto | Completo |
+| `PRODUCER_FEEDBACK_TEMPLATE.md` | Plantilla de registro por productor: perfil, dolor, reacción a demo, objeciones, scores 1-5, decisión recomendada | Completo |
+| `OUTREACH_MESSAGES.md` | Mensajes de contacto: WhatsApp frío/referido/conocido, LinkedIn, email, manejo de respuestas comunes | Completo |
 
 ### `/docs/04-decisiones/` — Decisiones técnicas
 | Archivo | Contenido | Estado |
@@ -341,6 +344,29 @@
         - IA real: NO integrada
         - db push: NO ejecutado
         - TuHoroscopoCosmico.com: NO tocado
+✅ 28. Paquete de discovery comercial completo
+        - docs/07-go-to-market/DISCOVERY_RUNBOOK.md:
+          Objetivo de discovery (5 hipotesis a validar)
+          Perfil ideal de productor + de donde sacar candidatos
+          Estructura de reunion de 30 min (5 bloques con guia por bloque)
+          Preguntas pre-demo (contexto, proceso, dolor)
+          Preguntas post-demo (flujo, control, tiempos, metricas, piloto)
+          Senales positivas y negativas (criterios para identificar perfil)
+          Criterios de decision para avanzar a piloto real
+        - docs/07-go-to-market/PRODUCER_FEEDBACK_TEMPLATE.md:
+          Plantilla completa por productor: identificacion, perfil, situacion actual,
+          dolor declarado, reaccion a la demo, objeciones, funcionalidades pedidas,
+          scores 1-5 (dolor, urgencia, disposicion a probar, disposicion a pagar),
+          decision recomendada (descartar / nutrir / piloto), resumen ejecutivo
+        - docs/07-go-to-market/OUTREACH_MESSAGES.md:
+          4 versiones de mensajes de contacto (WA frio, WA referido, WA conocido, LinkedIn, email)
+          Manejo de respuestas comunes (que es, WA real, no tengo tiempo, mandame info, precio)
+          Notas de seguimiento para registrar cada contacto
+        - docs/07-go-to-market/PRE_PILOT_CHECKLIST.md actualizado con referencias
+        - db push: NO ejecutado
+        - WhatsApp real: NO integrado
+        - TuHoroscopoCosmico.com: NO tocado
+        - Datos reales: NO usados
 ✅ 27. Guion comercial de demo de 5 minutos — docs/07-go-to-market/DEMO_SCRIPT_5_MIN.md
         - Pitch inicial de 30 segundos (lenguaje natural, no corporativo)
         - 8 pasos de demo con qué mostrar y qué decir en cada pantalla
@@ -430,21 +456,25 @@
         - TuHoroscopoCosmico.com: NO tocado
    Proximos pasos recomendados (elegir uno para la siguiente sesion):
 
-   A) DISCOVERY CON PRODUCTORES — Ejecutar la demo con 3-5 producers reales usando
-      DEMO_SCRIPT_5_MIN.md + DISCOVERY_QUESTIONS.md como guia
-      Objetivo: validar hipotesis comercial antes de invertir en infraestructura cloud
+   PROXIMO PASO INMEDIATO:
 
-   B) DECISION PROVEEDOR WHATSAPP — Tomar la decision DECISION-007 sobre proveedor WABA
-      Evaluar: ¿el primer producer piloto ya tiene cuenta Twilio o WABA activo?
-      Implementar el adapter abstracto (lib/whatsapp/adapter.ts) sin integrar todavia
+   Ejecutar 3-5 entrevistas de discovery con productores reales.
+   Paquete completo disponible en docs/07-go-to-market/:
+     - OUTREACH_MESSAGES.md → para contactar productores
+     - DISCOVERY_RUNBOOK.md → para conducir la reunion
+     - DEMO_SCRIPT_5_MIN.md → guion de la demo
+     - PRODUCER_FEEDBACK_TEMPLATE.md → para registrar feedback
+     - DISCOVERY_QUESTIONS.md → preguntas de profundidad adicionales
 
-   C) PREPARACION CONTROLADA ENTORNO CLOUD — Iniciar el proceso de Supabase cloud
-      Crear proyecto cloud + verificar project-ref + preparar migraciones para deploy
-      REQUIERE autorizacion humana explicita antes de ejecutar supabase db push
-      Ver SUPABASE_SAFETY_RULES.md antes de cualquier accion
+   NO avanzar a WhatsApp real ni a cloud hasta tener:
+     - al menos 2/3 productores con dolor confirmado (score dolor >= 3/5)
+     - al menos 1 productor que acepte piloto controlado
 
-   D) ENTREVISTAS A PRODUCERS — Ejecutar las preguntas de DISCOVERY_QUESTIONS.md con 3-5 producers
-      Objetivo: validar hipotesis y perfil del primer piloto antes de integrar WhatsApp real
+   Una vez completado el discovery, decidir:
+     B) DECISION PROVEEDOR WHATSAPP — DECISION-007 sobre proveedor WABA
+        (solo si el discovery confirma dolor y disposicion a piloto)
+     C) PREPARACION ENTORNO CLOUD — Supabase cloud con autorizacion humana explicita
+        REQUIERE verificar project-ref antes de cualquier supabase db push
 
    Tareas pendientes de la lista original:
    27. Crear cuentas cloud: Supabase proyecto + Anthropic API + Twilio sandbox (depende de C)
