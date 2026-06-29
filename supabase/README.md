@@ -124,14 +124,20 @@ Si el project-ref no es `fawlbfkkxufyhnghynjk`: **no ejecutar**. Ver `docs/00-ai
 
 ### Entorno local (recomendado para desarrollo)
 
+> **`db reset` = local (Docker). `db push` = remoto (nube).**
+> `db push` esta PROHIBIDO sin verificar primero que project-ref = `fawlbfkkxufyhnghynjk`.
+> El proyecto `TuHoroscopoCosmico.com` esta PROHIBIDO desde este repo.
+
 Requiere Docker Desktop corriendo y Supabase CLI disponible.
 
 ```bash
 # Iniciar stack local (primera vez o tras reiniciar Docker)
 npx supabase@2.108.0 start
 
-# Aplicar migraciones y resetear DB local
+# Aplicar migraciones SOLO en local — NO toca el proyecto remoto
 npx supabase@2.108.0 db reset
+# ↑ Este comando es seguro: opera solo contra Docker local.
+# ↑ NO ejecutar supabase db push aqui. db push es remoto.
 
 # O ejecutar directamente en psql local
 psql postgresql://postgres:postgres@localhost:54322/postgres \

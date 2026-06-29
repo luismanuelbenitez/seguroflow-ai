@@ -94,6 +94,21 @@
 
 ---
 
+## Supabase Safety
+
+> Ver reglas completas en `docs/00-ai-context/SUPABASE_SAFETY_RULES.md`.
+
+| Campo | Valor |
+|---|---|
+| Proyecto permitido | `seguroflow-ai` |
+| Project ref permitido | `fawlbfkkxufyhnghynjk` |
+| Proyecto PROHIBIDO | `TuHoroscopoCosmico.com` — nunca tocar desde este repo |
+| Estado de migracion remota | **NO aplicada** — solo validada localmente con `db reset` |
+| `supabase db push` | PROHIBIDO sin confirmacion humana explicita + verificacion de project-ref |
+| Proximo paso Supabase | Auth basico local (no remoto). La migracion remota espera hasta tener el proyecto cloud configurado. |
+
+---
+
 ## Qué NO se debe hacer todavía
 
 - **No ejecutar supabase db push** (migracion remota) hasta verificar project-ref = `fawlbfkkxufyhnghynjk`. Ver SUPABASE_SAFETY_RULES.md.
