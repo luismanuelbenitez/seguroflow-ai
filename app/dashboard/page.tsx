@@ -167,6 +167,51 @@ export default async function DashboardPage() {
               Cola de aprobacion
             </Link>
           </section>
+
+          {/*
+           * Acceso rapido: Outbox local simulado.
+           * Muestra mensajes aprobados en 'pending_approval' listos para
+           * simular el envio. NO envia WhatsApp real.
+           * El producer hace clic en "Simular envio" para registrar localmente
+           * que el mensaje habria sido enviado y ver el evento en el timeline.
+           */}
+          <section
+            style={{
+              background: '#fff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              padding: '1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1rem',
+            }}
+          >
+            <div>
+              <p style={{ margin: '0 0 0.25rem', fontWeight: 600, color: '#374151', fontSize: '0.9rem' }}>
+                Outbox local
+              </p>
+              <p style={{ margin: 0, color: '#6b7280', fontSize: '0.82rem' }}>
+                Simula el envio de mensajes aprobados — sin WhatsApp real
+              </p>
+            </div>
+            <Link
+              href="/dashboard/outbox"
+              style={{
+                display: 'inline-block',
+                padding: '0.5rem 1rem',
+                background: '#d97706',
+                color: '#fff',
+                borderRadius: '6px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              Outbox local
+            </Link>
+          </section>
         </div>
       )}
 
@@ -205,6 +250,7 @@ export default async function DashboardPage() {
           <li>✅ Listar cotizaciones demo en /dashboard/quotes</li>
           <li>✅ Carga manual de cotizaciones en /dashboard/quotes/new</li>
           <li>✅ Cola de aprobacion local en /dashboard/approvals</li>
+          <li>✅ Outbox local simulado en /dashboard/outbox</li>
           <li>Ver prospectos del producer (tabla <code>prospects</code>)</li>
           <li>Panel de handoffs pendientes (tabla <code>human_handoffs</code>)</li>
           <li>Integracion WhatsApp sandbox (Twilio) para mensajes de seguimiento</li>

@@ -4,12 +4,14 @@
 > Actualizar cada vez que haya un avance significativo.
 > **Última actualización: 2026-06-29**
 
+
+
 ---
 
 ## Estado general
 
-**Fase:** Vista de detalle de cotizacion con timeline de quote_events implementada en /dashboard/quotes/[quoteId].
-**Progreso:** Cola de aprobacion + detalle de cotizacion + timeline cronologico de eventos. createManualQuote() ahora registra evento quote_created en quote_events. Links "Ver →" en lista de quotes, "Ver timeline →" en approvals. No hay nuevas migraciones. npm run build exitoso. supabase db push sigue prohibido.
+**Fase:** Outbox local simulado implementado en /dashboard/outbox. Flujo completo: crear → aprobar → simular envio → ver en timeline.
+**Progreso:** Outbox local con simulacion de envio (sin WhatsApp real). INSERT en whatsapp_messages (delivery_status='sent', waba_message_id=null). UPDATE quotes.status a 'contacted'. INSERT quote_events con event_type='message_sent'. Opt-out bloqueante en UI y Server Action (doble barrera). No hay nuevas migraciones. npm run build pendiente. supabase db push sigue prohibido.
 
 **Usuario demo local:** demo@seguroflow.local (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1 — valido solo en la DB local actual)
 
@@ -232,12 +234,37 @@
         - components/dashboard/quotes-list.tsx: columna "Detalle" con link "Ver →" por fila
         - app/dashboard/approvals/page.tsx: link "Ver timeline →" en cada tarjeta de aprobacion
         - README.md: seccion "Vista de detalle de cotizacion con timeline"
-        - CURRENT_STATE.md: este archivo
-        - npm run build: pendiente de verificacion
-   21. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
-   22. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
-   23. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
-   24. Iniciar implementacion MVP-01 (deteccion de cotizaciones, envio de mensajes)
+        - npm run build: exitoso (12 rutas generadas)
+✅ 21. Outbox local simulado: /dashboard/outbox
+        - lib/outbox/get-local-outbox.ts: 2 queries (quotes status=pending_approval + approved_message IS NOT NULL,
+          luego prospects). Dos queries para evitar inferencia 'never' de Supabase TS.
+          opt_out=true: incluido con flag, no excluido — producer ve quote "varada" y entiende el bloqueo.
+        - app/actions/outbox.ts: simulateSendApprovedMessage() — Server Action 9 pasos de validacion
+          Paso 7: INSERT whatsapp_messages outbound simulado — columnas compatibles (sin gap):
+            body=approved_message, direction='outbound', delivery_status='sent', sent_at=now(),
+            waba_message_id=null, template_name='seguimiento_inicial_v1', metadata={simulated:true}
+          Paso 8: UPDATE quotes.status 'pending_approval' → 'contacted' (patron supabase.from as any)
+          Paso 9: INSERT quote_events event_type='message_sent', actor='producer'
+          redirect('/dashboard/outbox') en exito
+          GAP documentado: waba_message_id=null (en produccion recibiria ID del proveedor WABA)
+        - components/dashboard/simulate-send-button.tsx: Client Component con useActionState
+          failedQuoteId para aislamiento de errores (N forms por pagina, identico a approval-form)
+          opt_out: muestra aviso bloqueante, no boton
+        - app/dashboard/outbox/page.tsx: Server Component, auth guard, aviso MVP siempre visible
+          Item: nombre, telefono, tipo, status, approved_message en panel verde, SimulateSendButton
+          Estado vacio: link a /approvals y /quotes/new
+        - app/dashboard/page.tsx: seccion "Outbox local" con link naranja, item en lista ✅
+        - app/dashboard/approvals/page.tsx: link "Outbox local →" en navegacion
+        - README.md: seccion "Outbox local simulado" con flujo, que hace, waba_message_id null
+        - npm run build: exitoso (12 rutas generadas, /dashboard/outbox incluido)
+        - WhatsApp real: NO integrado
+        - IA real: NO integrada
+        - db push: NO ejecutado
+        - TuHoroscopoCosmico.com: NO tocado
+   22. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
+   23. Simulador de respuesta inbound local (prospect contesta — inbound message + status change)
+   24. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
+   25. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
 ```
 
 ---

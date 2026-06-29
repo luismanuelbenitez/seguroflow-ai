@@ -151,7 +151,32 @@ export default async function ApprovalsPage() {
         </Link>
         <span aria-hidden>›</span>
         <span style={{ color: '#374151', fontWeight: 600 }}>Cola de aprobacion</span>
+        <span aria-hidden style={{ marginLeft: 'auto' }}>
+          {/*
+           * Link rapido al outbox desde la cola de aprobacion.
+           * Flujo esperado: aprobar mensaje aqui → ir al outbox a simular envio.
+           */}
+        </span>
       </nav>
+
+      {/* Link rapido al outbox — siguiente paso despues de aprobar */}
+      <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'flex-end' }}>
+        <Link
+          href="/dashboard/outbox"
+          style={{
+            padding: '0.4rem 0.9rem',
+            background: '#fff7ed',
+            color: '#c2410c',
+            border: '1px solid #fed7aa',
+            borderRadius: '6px',
+            fontSize: '0.82rem',
+            fontWeight: 600,
+            textDecoration: 'none',
+          }}
+        >
+          Outbox local →
+        </Link>
+      </div>
 
       {/* Encabezado */}
       <div style={{ marginBottom: '1.5rem' }}>

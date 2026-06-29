@@ -317,6 +317,49 @@ Ver: `docs/05-architecture/DATA_MODEL.md` — sección "Relación flujo-modelo d
 
 ---
 
+## Outbox local simulado
+
+La pantalla `/dashboard/outbox` permite simular el envio de mensajes aprobados.
+**No envia ningun mensaje por WhatsApp real.**
+
+**Requisitos previos:**
+- Login local con magic link (Mailpit: `http://localhost:54324`)
+- Seed local ejecutado (producer + membership — ver sección "Seed local")
+- Al menos una cotizacion con mensaje aprobado en `/dashboard/approvals`
+
+**Flujo completo:**
+
+```
+/dashboard/quotes/new → crear cotizacion manual
+  ↓
+/dashboard/approvals → aprobar mensaje M1 (plantilla editable)
+  ↓ (status cambia a pending_approval)
+/dashboard/outbox → ver mensaje pendiente de envio simulado
+  ↓ clic "Simular envio"
+/dashboard/quotes/[quoteId] → ver evento message_sent en el timeline
+```
+
+**Que hace "Simular envio":**
+
+1. Inserta un registro en `whatsapp_messages` con `direction='outbound'`, `delivery_status='sent'`, `sent_at=now()`, `waba_message_id=null`
+2. Actualiza `quotes.status` de `pending_approval` a `contacted`
+3. Inserta evento en `quote_events` con `event_type='message_sent'`, `actor='producer'`
+
+**Comportamiento con opt-out:**
+Si el prospect tiene `opt_out = true`, el boton "Simular envio" se reemplaza por un aviso de bloqueo. El Server Action valida opt_out nuevamente (doble barrera).
+
+**Por que `waba_message_id = null`:**
+En produccion, Twilio/360dialog retornan un ID de mensaje real al enviar. Ese ID se guarda en `waba_message_id` para rastrear delivery. En la simulacion local no hay ID externo — la columna es nullable en el schema.
+
+**Lo que NO hace:**
+- No envia mensajes por WhatsApp (sin integracion WABA)
+- No integra IA
+- No usa datos reales
+- No aplica migraciones remotas (`supabase db push`)
+- No usa service role key en el frontend
+
+---
+
 ## Vista de detalle de cotizacion con timeline
 
 La ruta `/dashboard/quotes/[quoteId]` muestra el detalle completo de una cotizacion
