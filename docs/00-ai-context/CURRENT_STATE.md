@@ -43,7 +43,7 @@
 ### `/docs/05-architecture/` — Arquitectura
 | Archivo | Contenido | Estado |
 |---|---|---|
-| `DATA_MODEL.md` | 11 tablas en inglés, multi-tenant, RLS, enums en inglés, índices, trigger opt-out. Alineado con DECISION-003. | Completo v2.0 |
+| `DATA_MODEL.md` | 10 tablas en inglés, multi-tenant, RLS, enums en inglés, índices, trigger opt-out. Alineado con DECISION-003. | Completo v2.0 |
 
 ### `/docs/07-go-to-market/` — Salida al mercado
 | Archivo | Contenido | Estado |
@@ -128,7 +128,7 @@
 ✅ 1. Documentación funcional completa (DECISION-001)
 ✅ 2. Stack tecnológico definido (DECISION-002)
 ✅ 3. Modelo multi-tenant y RLS definido (DECISION-003)
-✅ 4. DATA_MODEL.md actualizado: inglés, 11 tablas, producer_id, enums, índices
+✅ 4. DATA_MODEL.md actualizado: inglés, 10 tablas, producer_id, enums, índices
 ✅ 5. Primera migración de Supabase generada: supabase/migrations/001_base_multitenant_schema.sql
 ✅ 6. Skeleton Next.js 15 creado: app/, lib/, server/, types/, componentes base
 ✅ 7. npm install + npm run build exitosos (Next.js 15.5.19)
