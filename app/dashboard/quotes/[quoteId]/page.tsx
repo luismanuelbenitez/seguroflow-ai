@@ -4,6 +4,8 @@ import { getCurrentProducerContext } from '@/lib/producers/get-current-producer-
 import { getQuoteDetail } from '@/lib/quotes/get-quote-detail'
 import { formatQuoteStatus, formatInsuranceType } from '@/lib/quotes/get-quotes-for-current-producer'
 import DashboardShell from '@/components/dashboard/dashboard-shell'
+import SimulateInboundForm from '@/components/dashboard/simulate-inbound-form'
+import { INBOUND_ELIGIBLE_STATUSES } from '@/lib/messages/inbound-scenarios'
 import type { QuoteEventDetailRow, QuoteDetailRow, ProspectDetailRow, QuoteStatus } from '@/lib/quotes/get-quote-detail'
 
 /*
@@ -299,6 +301,22 @@ export default async function QuoteDetailPage({ params }: PageProps) {
 
       {/* Timeline de eventos */}
       <EventTimeline events={events} quoteCreatedAt={quote.created_at} />
+
+      {/*
+       * Panel de simulacion de respuesta inbound.
+       * Solo se muestra cuando la quote esta en un estado donde tiene sentido
+       * que el prospecto responda (contacted, contacted_2, no_response_1, no_response).
+       *
+       * INBOUND_ELIGIBLE_STATUSES proviene de lib/messages/inbound-scenarios.ts.
+       * La misma lista la valida el Server Action (doble barrera).
+       *
+       * SimulateInboundForm es un Client Component (usa useActionState).
+       * Se puede importar en un Server Component sin problema — Next.js lo
+       * convierte automaticamente al boundary 'use client' necesario.
+       */}
+      {(INBOUND_ELIGIBLE_STATUSES as string[]).includes(quote.status) && (
+        <SimulateInboundForm quoteId={quote.id} />
+      )}
     </DashboardShell>
   )
 }
@@ -792,16 +810,30 @@ function DataRow({ label, value }: { label: string; value: string }) {
  * Mismo diseño que en quotes-list.tsx para consistencia visual.
  */
 function QuoteStatusBadge({ status }: { status: QuoteStatus }) {
+  /*
+   * Mapa completo de colores para todos los valores del enum quote_status.
+   * Ver: types/database.ts — Enums.quote_status (lista completa de valores).
+   *
+   * Statuses agregados en MVP paso 22 (simulacion inbound):
+   *   responded:    teal — prospect respondio, requiere seguimiento del producer
+   *   no_response_1: azul claro — sin respuesta despues del primer intento
+   *   contacted_2:  azul medio — segundo contacto realizado
+   *   paused:       gris medio — seguimiento pausado manualmente
+   */
   const colors: Record<string, { bg: string; text: string }> = {
     pending_follow_up: { bg: '#fef9c3', text: '#854d0e' },
     scheduled: { bg: '#e0f2fe', text: '#0369a1' },
     pending_approval: { bg: '#ede9fe', text: '#6d28d9' },
     contacted: { bg: '#dbeafe', text: '#1d4ed8' },
+    no_response_1: { bg: '#e0f2fe', text: '#075985' },
+    contacted_2: { bg: '#bfdbfe', text: '#1e40af' },
+    responded: { bg: '#ccfbf1', text: '#0f766e' },
     interested: { bg: '#dcfce7', text: '#166534' },
     human_handoff: { bg: '#ede9fe', text: '#6d28d9' },
     closed_won: { bg: '#bbf7d0', text: '#14532d' },
     closed_lost: { bg: '#fee2e2', text: '#991b1b' },
     no_response: { bg: '#f3f4f6', text: '#6b7280' },
+    paused: { bg: '#e5e7eb', text: '#4b5563' },
     cancelled: { bg: '#f3f4f6', text: '#9ca3af' },
     opt_out: { bg: '#fce7f3', text: '#9d174d' },
     error: { bg: '#fee2e2', text: '#dc2626' },
@@ -843,11 +875,13 @@ function formatEventType(eventType: string): string {
     // Eventos de aprobacion (DECISION-005 — app/actions/approvals.ts)
     message_approved: 'Mensaje M1 aprobado',
     message_prepared: 'Mensaje preparado',
-    // Eventos de envio (futuros — cuando WABA este integrado)
+    // Eventos de envio (outbox simulado — app/actions/outbox.ts)
     message_sent: 'Mensaje enviado',
     message_delivered: 'Mensaje entregado',
     message_read: 'Mensaje leido',
-    // Eventos de respuesta (futuros)
+    // Eventos de recepcion inbound (simulacion — app/actions/inbound.ts)
+    message_received: 'Mensaje recibido',
+    // Eventos de respuesta (simulacion inbound + produccion futura)
     response_received: 'Respuesta recibida',
     response_classified: 'Respuesta clasificada',
     // Eventos de seguimiento
@@ -855,7 +889,7 @@ function formatEventType(eventType: string): string {
     status_changed: 'Estado cambiado',
     // Eventos de handoff y cierre
     human_handoff_created: 'Handoff a humano',
-    // Eventos de opt-out
+    // Eventos de opt-out (simulacion — app/actions/inbound.ts escenario opt_out)
     opt_out_received: 'Opt-out recibido',
     opt_out_blocked_send: 'Envio bloqueado por opt-out',
   }

@@ -251,6 +251,7 @@ export default async function DashboardPage() {
           <li>✅ Carga manual de cotizaciones en /dashboard/quotes/new</li>
           <li>✅ Cola de aprobacion local en /dashboard/approvals</li>
           <li>✅ Outbox local simulado en /dashboard/outbox</li>
+          <li>✅ Simulacion de respuestas inbound en /dashboard/quotes/[quoteId]</li>
           <li>Ver prospectos del producer (tabla <code>prospects</code>)</li>
           <li>Panel de handoffs pendientes (tabla <code>human_handoffs</code>)</li>
           <li>Integracion WhatsApp sandbox (Twilio) para mensajes de seguimiento</li>

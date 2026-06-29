@@ -261,10 +261,48 @@
         - IA real: NO integrada
         - db push: NO ejecutado
         - TuHoroscopoCosmico.com: NO tocado
-   22. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
-   23. Simulador de respuesta inbound local (prospect contesta — inbound message + status change)
-   24. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
-   25. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
+✅ 22. Simulacion local de respuestas inbound: panel en /dashboard/quotes/[quoteId]
+        - lib/messages/inbound-scenarios.ts: 4 escenarios estaticos (sin IA)
+          interested → quote.status='interested', event_type='response_received'
+          has_question → quote.status='responded', event_type='response_received'
+          not_interested → quote.status='closed_lost', event_type='response_received'
+          opt_out → quote.status='opt_out', event_type='opt_out_received', prospects.opt_out=true
+          Cada escenario define: key, label, sampleMessage, targetStatus, shouldSetOptOut, eventDescription, eventType
+          INBOUND_ELIGIBLE_STATUSES: contacted | contacted_2 | no_response_1 | no_response
+        - app/actions/inbound.ts: simulateInboundResponse() — Server Action 10 pasos
+          Paso 7: INSERT whatsapp_messages direction='inbound', delivery_status='delivered',
+            waba_message_id=null, template_name=null, metadata={simulated:true, scenario:key}
+          Paso 8: UPDATE prospects.opt_out=true (solo si shouldSetOptOut — patron supabase.from as any)
+          Paso 9: UPDATE quotes.status → scenario.targetStatus (patron supabase.from as any)
+          Paso 10: INSERT quote_events event_type=scenario.eventType, actor='webhook'
+            actor='webhook' — semanticamente correcto: en prod llegaria via webhook WABA
+          redirect('/dashboard/quotes/[quoteId]') en exito
+          GAP documentado: waba_message_id=null en simulacion (en prod recibiria ID del prospect)
+        - components/dashboard/simulate-inbound-form.tsx: Client Component con useActionState
+          Un solo form con 4 botones submit (name="scenario" value={key}) — HTML estandar sin JS extra
+          Sin failedQuoteId — un solo form por pagina (no hay N forms como en approvals/outbox)
+          formatScenarioStatus() inline — no puede importar lib/quotes/get-quotes-for-current-producer
+            porque ese modulo importa next/headers (server-only). Boundary client/server respetado.
+          4 tarjetas con colores: verde (interesado), azul (duda), naranja (no interesado), rojo (opt-out)
+        - app/dashboard/quotes/[quoteId]/page.tsx: panel condicional al final de la pagina
+          Solo muestra SimulateInboundForm si quote.status IN INBOUND_ELIGIBLE_STATUSES
+          QuoteStatusBadge: agregados colores para responded, no_response_1, contacted_2, paused
+          formatEventType: agregado 'message_received' para futura compatibilidad
+        - components/dashboard/quotes-list.tsx: QuoteStatusBadge ampliado
+          Agregados: pending_approval, responded, no_response_1, contacted_2, paused
+        - app/dashboard/page.tsx: item "Simulacion de respuestas inbound" en lista ✅
+        - README.md: seccion "Simulacion local de respuestas inbound" con tabla de escenarios
+        - npm run build: exitoso (12 rutas, /dashboard/quotes/[quoteId] 2.35kB con Client Component)
+        - WhatsApp real: NO integrado
+        - IA real: NO integrada
+        - db push: NO ejecutado
+        - TuHoroscopoCosmico.com: NO tocado
+   23. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
+   24. Cron/scheduler local para detectar quotes en pending_follow_up y moverlas a scheduled
+       (simular el paso automatico del tiempo sin integrar WABA ni IA)
+   25. Pantalla de metricas basicas: quotes por status, conversion rate, opt-outs totales
+   26. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
+   27. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
 ```
 
 ---

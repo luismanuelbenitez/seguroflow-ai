@@ -317,6 +317,57 @@ Ver: `docs/05-architecture/DATA_MODEL.md` — sección "Relación flujo-modelo d
 
 ---
 
+## Simulacion local de respuestas inbound
+
+Desde el timeline de una cotizacion (`/dashboard/quotes/[quoteId]`), el producer puede simular que el prospecto respondio por WhatsApp. **No recibe ningun mensaje real. No usa IA. No usa datos reales.**
+
+**Prerequisitos:**
+- Login local con magic link (Mailpit: `http://localhost:54324`)
+- Al menos una cotizacion con `status = 'contacted'` (haber pasado por el outbox primero)
+
+**Flujo completo:**
+
+```
+/quotes/new      → crear cotizacion manual
+  ↓
+/approvals       → aprobar mensaje M1
+  ↓ (status: pending_approval)
+/outbox          → simular envio del mensaje
+  ↓ (status: contacted)
+/quotes/[id]     → aparece panel "Simular respuesta del prospecto"
+  ↓ elegir escenario
+/quotes/[id]     → ver evento en el timeline, status actualizado
+```
+
+**Cuatro escenarios:**
+
+| Escenario | Mensaje ficticio | Status resultante |
+|---|---|---|
+| Interesado | "Hola, si, me interesa..." | `interested` |
+| Duda | "Tengo una duda sobre la cobertura..." | `responded` |
+| No interesado | "Gracias, por ahora no me interesa." | `closed_lost` |
+| Opt-out | "Por favor no me escriban mas." | `opt_out` |
+
+**Que hace cada simulacion:**
+1. INSERT en `whatsapp_messages` con `direction='inbound'`, `delivery_status='delivered'`, `waba_message_id=null`, `metadata.simulated=true`
+2. UPDATE `quotes.status` → status del escenario elegido
+3. INSERT en `quote_events` con `response_received` o `opt_out_received` (visible en timeline)
+4. Si escenario opt-out: UPDATE `prospects.opt_out=true`, `prospects.opt_out_at=now()`
+
+**Efectos del opt-out:**
+- `prospects.opt_out=true` bloquea futuros seguimientos en `/dashboard/approvals` y `/dashboard/outbox`
+- El detalle de la quote muestra badge rojo "OPT-OUT activo — No contactar"
+- Los Server Actions de approvals, outbox e inbound validan `opt_out` en el servidor (doble barrera)
+
+**Lo que NO hace:**
+- No recibe mensajes por WhatsApp (sin webhook WABA)
+- No integra IA
+- No usa datos reales
+- No aplica migraciones remotas (`supabase db push`)
+- No usa service role key
+
+---
+
 ## Outbox local simulado
 
 La pantalla `/dashboard/outbox` permite simular el envio de mensajes aprobados.
