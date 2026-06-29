@@ -497,6 +497,42 @@ evento de creacion — su timeline estara vacio hasta que ocurra el primer `mess
 
 ---
 
+## Métricas locales
+
+La pantalla `/dashboard/metrics` muestra al producer un resumen del estado del flujo simulado. **No usa WhatsApp real. No usa IA. No usa datos reales.**
+
+**Prerequisitos:**
+- Login local con magic link (Mailpit: `http://localhost:54324`)
+- Al menos una cotización cargada (desde `/quotes/new`)
+
+**Qué muestra:**
+
+| Sección | Métricas |
+|---|---|
+| Volumen | Cotizaciones totales, pendientes, programadas, en aprobacion |
+| Embudo | Contactadas, sin respuesta, respondieron, interesadas |
+| Resultados | Cerradas ganadas/perdidas, opt-outs (quotes y prospectos) |
+| Mensajes | Outbound simulados, inbound simulados, tasa de respuesta, tasa de interés |
+| Distribución | Tabla de todas las quotes por status con barra proporcional |
+| Actividad | Últimos 5 eventos del timeline global con link al detalle |
+
+**Tasas calculadas:**
+- **Tasa de respuesta:** `inbound / outbound * 100` — qué % de mensajes enviados recibieron respuesta simulada
+- **Tasa de interés:** `interested / ever_contacted * 100` — qué % de prospectos contactados mostraron interés
+  - `ever_contacted` = todas las quotes en estados que implican al menos 1 mensaje enviado (no solo el status actual)
+
+**Lo que NO hace:**
+- No usa WhatsApp real (todos los mensajes son simulados)
+- No integra IA
+- No usa datos reales
+- No aplica migraciones remotas (`supabase db push`)
+- No usa service role key
+
+**GAP documentado:**
+En producción se filtrarían los mensajes por `metadata.simulated=true` para separar envíos reales de simulaciones históricas. En MVP local todos los mensajes en `whatsapp_messages` son simulados, así que se cuentan todos.
+
+---
+
 ## Supabase — seguridad de entorno
 
 Este repo apunta **exclusivamente** al proyecto Supabase `seguroflow-ai` (ref: `fawlbfkkxufyhnghynjk`).

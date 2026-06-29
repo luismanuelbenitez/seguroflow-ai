@@ -10,8 +10,8 @@
 
 ## Estado general
 
-**Fase:** Outbox local simulado implementado en /dashboard/outbox. Flujo completo: crear → aprobar → simular envio → ver en timeline.
-**Progreso:** Outbox local con simulacion de envio (sin WhatsApp real). INSERT en whatsapp_messages (delivery_status='sent', waba_message_id=null). UPDATE quotes.status a 'contacted'. INSERT quote_events con event_type='message_sent'. Opt-out bloqueante en UI y Server Action (doble barrera). No hay nuevas migraciones. npm run build pendiente. supabase db push sigue prohibido.
+**Fase:** MVP local fase 1 completo. Flujo completo simulado + métricas básicas implementadas.
+**Progreso:** Flujo local completo: /quotes/new → /scheduler → /approvals → /outbox → /quotes/[id] (inbound) → /metrics. Sin WhatsApp real. Sin IA. Sin migraciones. supabase db push sigue prohibido. TuHoroscopoCosmico.com sigue prohibido.
 
 **Usuario demo local:** demo@seguroflow.local (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1 — valido solo en la DB local actual)
 
@@ -333,15 +333,39 @@
         - IA real: NO integrada
         - db push: NO ejecutado
         - TuHoroscopoCosmico.com: NO tocado
-   24. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
-   25. Pantalla de metricas basicas: quotes por status, tasa de respuesta, opt-outs
-   26. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
-   27. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
-   24. Cron/scheduler local para detectar quotes en pending_follow_up y moverlas a scheduled
-       (simular el paso automatico del tiempo sin integrar WABA ni IA)
-   25. Pantalla de metricas basicas: quotes por status, conversion rate, opt-outs totales
-   26. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
-   27. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
+✅ 24. Métricas locales del MVP: /dashboard/metrics
+        - lib/metrics/get-basic-dashboard-metrics.ts: helper server-side con 5 queries en paralelo (Promise.all)
+            1. quotes: todos los del producer (id, status) → conteo en memoria con Map<QuoteStatus, number>
+            2. prospects: count opt_out=true → optOutProspectsCount
+            3. whatsapp_messages direction='outbound' → outboundSimulatedCount
+            4. whatsapp_messages direction='inbound' → inboundSimulatedCount
+            5. quote_events: ultimos 5 del producer → lastEvents
+          Sigue patron de otros helpers: recibe producerId (caller maneja auth), NO llama getCurrentProducerContext().
+          Workaround TypeScript 'never': cast explícito de .data en los 5 resultados.
+          GAP documentado: metadata.simulated no filtrado (en MVP todo es simulado, en M2 habra que filtrar).
+          GAP documentado: interestRate usa everContactedCount (no solo status='contacted' actual).
+          Retorna BasicDashboardMetrics: todos los conteos en 0 si error (nunca undefined).
+        - app/dashboard/metrics/page.tsx: Server Component, 4 secciones de cards + tabla + eventos
+          Sección Volumen: totalQuotes, pendingFollowUpCount, scheduledCount, pendingApprovalCount
+          Sección Embudo: contactedCount (contacted+contacted_2), noResponseCount, respondedCount, interestedCount
+          Sección Resultados: closedWonCount, closedLostCount, optOutQuotesCount, optOutProspectsCount
+          Sección Mensajes: outboundSimulatedCount, inboundSimulatedCount, responseRate%, interestRate%
+          Tabla distribución: todos los statuses con count > 0, barras proporcionales visuales (CSS puro)
+          Actividad reciente: últimos 5 eventos con formatEventType, formatActor, link a timeline
+          Disclaimer MVP visible. Footer con notas técnicas y GAPs documentados.
+          Sin gráficos. Sin librerías adicionales. Inline styles consistentes con el resto del proyecto.
+        - app/dashboard/page.tsx: card 'Métricas locales' con link cyan (#0891b2) + item en lista ✅
+        - README.md: sección 'Métricas locales' con tabla, tasas calculadas, GAP metadata.simulated
+        - npm run build: pendiente
+        - WhatsApp real: NO integrado
+        - IA real: NO integrada
+        - db push: NO ejecutado
+        - TuHoroscopoCosmico.com: NO tocado
+   25. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md (discovery para validacion comercial)
+   26. Mejorar UX visual del dashboard para demo comercial (sin datos reales)
+   27. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
+   28. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
+   29. Checklist pre-piloto: productor real, consentimiento LPDP Uruguay, sandbox WABA
 ```
 
 ---

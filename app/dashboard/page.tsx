@@ -256,6 +256,50 @@ export default async function DashboardPage() {
               Outbox local
             </Link>
           </section>
+
+          {/*
+           * Acceso rapido: Métricas locales.
+           * Vista de estado del flujo simulado: volumen de cotizaciones por estado,
+           * embudo de contacto, tasas de respuesta e interés, actividad reciente.
+           * No usa WhatsApp real. No usa IA. Solo datos locales del producer.
+           */}
+          <section
+            style={{
+              background: '#fff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              padding: '1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1rem',
+            }}
+          >
+            <div>
+              <p style={{ margin: '0 0 0.25rem', fontWeight: 600, color: '#374151', fontSize: '0.9rem' }}>
+                Métricas locales
+              </p>
+              <p style={{ margin: 0, color: '#6b7280', fontSize: '0.82rem' }}>
+                Estado del flujo: volumen, embudo, tasas de respuesta e interés
+              </p>
+            </div>
+            <Link
+              href="/dashboard/metrics"
+              style={{
+                display: 'inline-block',
+                padding: '0.5rem 1rem',
+                background: '#0891b2',
+                color: '#fff',
+                borderRadius: '6px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              Ver métricas
+            </Link>
+          </section>
         </div>
       )}
 
@@ -297,6 +341,7 @@ export default async function DashboardPage() {
           <li>✅ Outbox local simulado en /dashboard/outbox</li>
           <li>✅ Simulacion de respuestas inbound en /dashboard/quotes/[quoteId]</li>
           <li>✅ Scheduler local manual en /dashboard/scheduler</li>
+          <li>✅ Métricas locales en /dashboard/metrics</li>
           <li>Ver prospectos del producer (tabla <code>prospects</code>)</li>
           <li>Panel de handoffs pendientes (tabla <code>human_handoffs</code>)</li>
           <li>Integracion WhatsApp sandbox (Twilio) para mensajes de seguimiento</li>
