@@ -152,4 +152,55 @@ La superficie de exposición de PII es menor campo a campo que en un archivo CSV
 
 ---
 
-*Próximas decisiones pendientes: proveedor WABA definitivo, retención de datos, gestión de secrets para multi-productor, campo quote_reference (agregar columna o usar campos existentes).*
+---
+
+## [DECISION-005] Flujo de seguimiento WhatsApp para el MVP
+
+- **Fecha:** 2026-06-29
+- **Estado:** Aceptada
+- **Documento completo:** [DECISION-005-flujo-seguimiento-whatsapp-mvp.md](DECISION-005-flujo-seguimiento-whatsapp-mvp.md)
+
+### Contexto
+
+Con la ingesta de cotizaciones funcionando (DECISION-004), el siguiente paso del
+MVP-01 es definir cómo el sistema hace el seguimiento de esas cotizaciones.
+Había que decidir cuántos mensajes se envían, quién los aprueba, qué estados recorren
+y qué queda registrado, antes de escribir una línea de código del flujo de seguimiento.
+
+### Opciones consideradas
+
+1. **Modo automático desde el inicio** — el sistema genera y envía sin intervención.
+   Riesgo: si algo sale mal en el piloto, daña la relación del producer con sus clientes.
+   
+2. **Modo manual asistido** — el sistema prepara el mensaje, el producer lo aprueba antes
+   de enviarlo. El sistema asiste, no actúa solo.
+
+### Decisión tomada
+
+**Modo manual asistido para el piloto.** En `send_mode = 'manual'`, todos los mensajes
+requieren aprobación explícita del producer antes de enviarse.
+
+Secuencia: 3 mensajes máximo por cotización:
+- M1 (24-48h): seguimiento inicial, aprobación del producer.
+- M2 (48-72h post M1): manejo de objeciones, aprobación del producer.
+- M3 (5-7 días): cierre elegante, disparo manual por el producer — nunca automático.
+
+La regla "máximo 2 mensajes automáticos sin intervención humana" se preserva: M3 es
+siempre una acción manual, nunca disparada por el sistema.
+
+### Consecuencias
+
+- **Sin cambios de schema.** El flujo usa tablas existentes: `quotes.status`,
+  `quotes.approved_message`, `quote_events`, `whatsapp_messages`, `human_handoffs`.
+- **Próximo paso en código:** UI del dashboard para la cola de aprobación
+  (`quotes` con `status = 'pending_approval'`).
+- **Sin integración WABA todavía:** el flujo completo puede simularse localmente
+  cambiando estados manualmente sin enviar mensajes reales.
+- MESSAGE_SEQUENCES.md actualizado con Variante D (M2) y Variante E (M3 / cierre elegante).
+- USER_FLOWS.md actualizado con Flujo 8: Recuperación manual asistida de cotización.
+- DATA_MODEL.md actualizado con sección sobre la relación flujo-modelo de datos.
+
+---
+
+*Próximas decisiones pendientes: proveedor WABA definitivo, número WABA del piloto,
+retención de datos, gestión de secrets para multi-productor, precio y modelo de cobro.*

@@ -1,12 +1,86 @@
 # MESSAGE_SEQUENCES.md
 # Secuencias de Mensajes — WhatsApp Business
 
-> **Versión:** 1.0 — 2026-06-28
+> **Versión:** 1.1 — 2026-06-29
 > **Contexto:** Todos los mensajes iniciados por el sistema (fuera de la ventana de 24h
 > de WhatsApp) deben ser **plantillas HSM aprobadas por Meta** antes de su uso en
 > producción. Las variables entre `{{doble llave}}` son los campos dinámicos.
 >
 > **Importante:** La IA no promete cobertura, no confirma emisión, no interpreta pólizas.
+
+---
+
+## Secuencia MVP — Piloto manual asistido (DECISION-005)
+
+> Esta sección define la secuencia de mensajes que se implementará primero.
+> En el piloto (send_mode = 'manual'), **todos los mensajes pasan por aprobación
+> explícita del producer** antes de enviarse. No hay envío automático en esta etapa.
+>
+> Ver: `docs/04-decisiones/DECISION-005-flujo-seguimiento-whatsapp-mvp.md`
+
+### Secuencia de 3 mensajes — cronograma y estados
+
+```
+COTIZACIÓN INGRESADA
+   │
+   │  ← umbral follow_up_hours (default 48h desde quote_date)
+   │
+   ▼
+[M1] Seguimiento inicial
+   Estado quote antes:  scheduled
+   Estado quote después: pending_approval → (aprobado) → contacted
+   Delay desde cotización:  24–48 h
+   Template HSM:  seguimiento_inicial_v1  (ver variantes A/B/C más abajo)
+   Requiere aprobación:  SÍ — siempre en el piloto
+   │
+   │  ← 48–72 h sin respuesta del prospect
+   │
+   ▼
+[M2] Ayuda / manejo de objeciones
+   Estado quote antes:  no_response_1
+   Estado quote después: pending_approval → (aprobado) → contacted_2
+   Delay desde M1:  48–72 h
+   Template HSM:  seguimiento_dudas_v1  (ver variante D más abajo)
+   Requiere aprobación:  SÍ — siempre en el piloto
+   │
+   │  ← el producer decide hacer un "último toque" manualmente
+   │
+   ▼
+[M3] Cierre elegante (SIEMPRE MANUAL — el producer lo dispara)
+   Estado quote antes:  no_response
+   Estado quote después: contacted  (reutilizamos)
+   Delay desde cotización:  5–7 días
+   Template HSM:  cierre_elegante_v1  (ver variante E más abajo)
+   Requiere aprobación:  N/A — el producer lo dispara desde el dashboard
+```
+
+**Regla crítica:** el sistema nunca envía M3 automáticamente. Es una acción
+explícita del producer. Esto mantiene el control humano sobre el nivel de
+insistencia y preserva la regla de "máximo 2 mensajes automáticos sin intervención".
+
+### Puerta de aprobación (gate de aprobación)
+
+En el piloto, antes de cualquier envío de M1 o M2, el flujo es:
+
+```
+Sistema detecta quote elegible
+   │
+   ▼
+Sistema prepara texto del mensaje
+   │  (quote.approved_message se pre-llena con texto sugerido)
+   ▼
+Sistema cambia status → pending_approval
+   │
+   ▼
+Producer recibe notificación: "Hay un mensaje para revisar"
+   │
+   ├─── Producer aprueba (sin cambios): se envía el texto sugerido
+   ├─── Producer edita y aprueba: se envía el texto editado
+   └─── Producer rechaza / pausa: status → paused; no se envía nada
+```
+
+El texto final aprobado se guarda en `quotes.approved_message` antes del envío.
+Esto crea un registro auditable de exactamente qué aprobó el producer.
 
 ---
 
@@ -236,6 +310,46 @@ Podés contactarlo manualmente o archivar la cotización:
 
 → Ver dashboard: {{link_dashboard}}
 ```
+
+---
+
+## Variante D — Mensaje 2 (Ayuda / manejo de objeciones) [MVP]
+
+> Template HSM: `seguimiento_dudas_v1`
+> Se usa como M2 en la secuencia MVP cuando no hubo respuesta al M1 en 48-72h.
+> Ángulo diferente: no repite el M1, abre posibilidades consultivas.
+
+```
+Hola {{nombre_prospecto}}, te escribo nuevamente de parte de {{nombre_productor}}.
+
+Quería preguntarte si tenés alguna duda con la cotización de {{tipo_seguro}} —
+a veces el precio, la cobertura o la forma de pago genera preguntas.
+
+Si querés te explico cómo funciona en 5 minutos. Y si ya lo resolviste, avisame
+tranquilo y no te molesto más.
+```
+
+---
+
+## Variante E — Mensaje 3 / Cierre elegante (SIEMPRE MANUAL) [MVP]
+
+> Template HSM: `cierre_elegante_v1`
+> Solo se envía por acción explícita del producer desde el dashboard.
+> El sistema nunca lo envía automáticamente.
+> Objetivo: cerrar el ciclo con dignidad, sin presión.
+
+```
+Hola {{nombre_prospecto}}, último mensaje de parte de {{nombre_productor}}.
+
+Entendemos que estás ocupado/a o que quizás ya tomaste una decisión.
+Si en algún momento querés revisar el seguro, acá estamos.
+
+¡Que te vaya bien!
+```
+
+> **Nota de diseño (igual que Variante B original):** el "último mensaje" funciona
+> comercialmente porque elimina la presión. Muchos prospectos responden precisamente
+> porque saben que no habrá más mensajes.
 
 ---
 

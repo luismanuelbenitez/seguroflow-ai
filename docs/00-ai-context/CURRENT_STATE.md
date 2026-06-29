@@ -2,13 +2,13 @@
 
 > Este archivo refleja el estado real del proyecto en la fecha indicada.
 > Actualizar cada vez que haya un avance significativo.
-> **Última actualización: 2026-06-28**
+> **Última actualización: 2026-06-29**
 
 ---
 
 ## Estado general
 
-**Fase:** Formulario manual de cotizaciones implementado. Flujo /dashboard/quotes/new funciona end-to-end con validacion server-side y deduplicacion de prospects.
+**Fase:** Flujo de seguimiento WhatsApp definido documentalmente (DECISION-005). Formulario manual de cotizaciones implementado y funcional.
 **Progreso:** Formulario en /dashboard/quotes/new con 10 campos, validacion E.164, deduplicacion de prospect por (producer_id, phone), Server Action createManualQuote() con redirect en exito. DECISION-004 aplicada: sin quote_reference (no existe en schema), usando risk_description para referencia textual. No hay nuevas migraciones. npm run build exitoso. supabase db push sigue prohibido.
 
 **Usuario demo local:** demo@seguroflow.local (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1 — valido solo en la DB local actual)
@@ -57,9 +57,11 @@
 ### `/docs/04-decisiones/` — Decisiones técnicas
 | Archivo | Contenido | Estado |
 |---|---|---|
-| `DECISION-LOG.md` | Índice de decisiones — 3 entradas registradas | 3 entradas |
+| `DECISION-LOG.md` | Índice de decisiones — 5 entradas registradas | 5 entradas |
 | `DECISION-002-stack-tecnologico-inicial.md` | Stack completo: Next.js, Supabase, Claude, Twilio, Vercel, Docker | Completo |
 | `DECISION-003-multitenant-rls.md` | Modelo multi-tenant: profiles, producers, producer_members, RLS, opt-out, service role | Completo |
+| `DECISION-004-ingesta-cotizaciones-mvp.md` | Formulario manual primero, CSV post-piloto | Completo |
+| `DECISION-005-flujo-seguimiento-whatsapp-mvp.md` | Flujo manual asistido: 3 mensajes, aprobación del producer, sin WABA todavía | Completo |
 
 ---
 
@@ -71,6 +73,7 @@
 | 002 | Stack: Next.js + TypeScript + Supabase + Claude + Twilio sandbox + Vercel + Docker | 2026-06-28 |
 | 003 | Multi-tenant: producer_id ≠ auth.uid(). Tres tablas: profiles, producers, producer_members | 2026-06-28 |
 | 004 | Ingesta de cotizaciones MVP: formulario manual primero. CSV diferido a fase post-piloto | 2026-06-29 |
+| 005 | Flujo de seguimiento WhatsApp: modo manual asistido. 3 mensajes max, aprobacion del producer | 2026-06-29 |
 | — | MVP es el Recuperador de Cotizaciones por WhatsApp, no una suite completa | 2026-06-28 |
 | — | La IA asiste y escala; no emite, no promete cobertura, no interpreta pólizas | 2026-06-28 |
 | — | Capa de abstracción LLM obligatoria: el código de negocio no llama a Anthropic directamente | 2026-06-28 |
@@ -92,8 +95,7 @@
 | Proveedor WABA definitivo para piloto real | 360dialog vs. Meta Cloud API directa | Mensajes a prospectos reales |
 | Número WABA del piloto | ¿Número del productor o número central del sistema? | Onboarding del piloto |
 | Retención de datos | ¿Cuánto tiempo se guardan mensajes y eventos? | Poner datos reales en producción |
-| Máximo de mensajes por cotización | El MVP dice 2; ¿es suficiente? | Validar en discovery |
-| Modo de carga de cotizaciones | CSV / formulario web / ambos | UI del productor |
+| Modo de carga de cotizaciones | CSV / formulario web / ambos — formulario ya implementado; CSV post-piloto | Validar con productores |
 | Precio y modelo de cobro | SaaS fijo / por cotización / por éxito | Post-piloto |
 
 ---
@@ -191,10 +193,18 @@
         - app/dashboard/quotes/page.tsx: link "+ Nueva cotizacion manual" en el encabezado
         - README.md: seccion "Carga manual local de cotizaciones"
         - DECISION-004 aplicada: risk_description para referencias (quote_reference no existe en schema)
-   18. Definir primer flujo de seguimiento: secuencia de mensajes WhatsApp para quotes pending_follow_up
-        (solo diseño/documento — sin integracion real todavia)
-   19. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
-   18. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
+✅ 18. Definir primer flujo de seguimiento: secuencia de mensajes WhatsApp para quotes pending_follow_up
+        - DECISION-005 creada: flujo manual asistido, 3 mensajes max, aprobacion explicita del producer
+        - Secuencia MVP: M1 (24-48h) + M2 (48-72h post M1) + M3 (siempre manual, 5-7 dias)
+        - M3 nunca es automatico — preserva la regla "maximo 2 mensajes automaticos sin intervencion"
+        - Sin cambios de schema: usa quotes.status, quotes.approved_message, quote_events, whatsapp_messages, human_handoffs
+        - MESSAGE_SEQUENCES.md actualizado: variante D (M2 objeciones) + variante E (M3 cierre elegante)
+        - USER_FLOWS.md actualizado: Flujo 8 "Recuperacion manual asistida de cotizacion" con diagrama completo
+        - DATA_MODEL.md actualizado: nueva seccion conceptual flujo-modelo de datos
+        - DECISION-LOG.md actualizado: entrada DECISION-005
+   19. Implementar UI de cola de aprobacion: /dashboard/quotes con filtro pending_approval
+   20. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
+   21. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
    19. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
    20. Carga de cotizaciones reales (formulario o CSV) — ver DECISION pendiente
    21. Iniciar implementacion MVP-01 (deteccion de cotizaciones, envio de mensajes)

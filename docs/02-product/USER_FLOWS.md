@@ -225,6 +225,114 @@ Al entrar al dashboard, el productor ve:
 
 ---
 
+## FLUJO 8 — Recuperación manual asistida de cotización (MVP piloto)
+
+> Este es el flujo que se implementa primero. A diferencia del Flujo 3 (activación
+> automática), aquí el producer aprueba cada mensaje antes de que se envíe.
+> Refleja el modo `send_mode = 'manual'` con el que arrancan todos los pilots.
+>
+> Ver: `docs/04-decisiones/DECISION-005-flujo-seguimiento-whatsapp-mvp.md`
+
+```
+SISTEMA                   PRODUCTOR                      PROSPECTO
+    |                         |                               |
+    | [Cron / revisión periódica]                             |
+    | Detecta: quote con umbral vencido                       |
+    | status: pending_follow_up → scheduled                   |
+    |                         |                               |
+    | Prepara texto del M1    |                               |
+    | (texto sugerido)        |                               |
+    | status: scheduled → pending_approval                    |
+    |                         |                               |
+    |──── Notificación ───────>|                               |
+    |     "Hay un mensaje     |                               |
+    |      para revisar"      |                               |
+    |                         |                               |
+    |                         |── Entra al dashboard ────────>|
+    |                         |   Ve: texto sugerido         |
+    |                         |   Ve: datos del prospect     |
+    |                         |   Puede: editar el texto     |
+    |                         |                              |
+    |                         |── Aprueba / edita y aprueba  |
+    |                         |                              |
+    |<─ Guarda approved_message ─────────────────────────────|
+    | status: pending_approval → contacted                    |
+    |                         |                               |
+    | [En el futuro: WABA envía M1]                           |
+    |─────────────────────────────────────────────────────────>|
+    |   "Hola, te escribo de parte de [Productor]..."        |
+    |                         |                               |
+    |                         |  ── 48-72h sin respuesta ──> |
+    |                         |                               |
+    | status: contacted → no_response_1                       |
+    | Prepara texto M2 (ángulo diferente)                     |
+    | status: no_response_1 → pending_approval                |
+    |──── Notificación ───────>|                               |
+    |     "Segundo mensaje    |                               |
+    |      listo para revisar"|                               |
+    |                         |── Aprueba M2 ─────────────────|
+    | status → contacted_2    |                               |
+    | [En el futuro: WABA envía M2]                           |
+    |─────────────────────────────────────────────────────────>|
+    |   "Solo quería confirmar si tenés dudas..."            |
+    |                         |                               |
+    |                         |  ── Sin respuesta ──────────> |
+    |                         |                               |
+    | status: contacted_2 → no_response                       |
+    |──── Notificación ───────>|                               |
+    |     "Sin respuesta tras |                               |
+    |      2 intentos"        |                               |
+    |                         |                               |
+    |         DECISION DEL PRODUCTOR (manual):                |
+    |                         |                               |
+    |                         |── Opción A: Enviar M3 manual ->|
+    |                         |   (dispara desde dashboard)  |
+    |                         |   "Último mensaje de parte..." |
+    |                         |                               |
+    |                         |── Opción B: Archivar ─────────|
+    |                         |   status → closed_lost       |
+    |                         |                               |
+    |                         |── Opción C: Llamar directo ───|
+    |                         |   (por fuera del sistema)    |
+    |                         |   Luego actualiza status     |
+    |                         |
+```
+
+### Variantes cuando el prospecto responde (en cualquier punto del flujo)
+
+```
+PROSPECTO responde
+    │
+    ├─► "Sí me interesa / ¿podemos hablar?"
+    │       status → interested
+    │       Sistema notifica al producer: [URGENTE]
+    │       Respuesta auto: "¡Perfecto! [Productor] te contacta en breve."
+    │       El producer cierra la venta manualmente → status → closed_won
+    │
+    ├─► "No me interesa / ya lo hice con otro"
+    │       status → closed_lost
+    │       Respuesta auto: "Entendido, gracias. Cualquier cosa estamos."
+    │       Sistema notifica al producer: [INFO]
+    │
+    ├─► "No me escribas más / STOP / Baja"
+    │       prospect.opt_out = true INMEDIATAMENTE
+    │       Respuesta auto: confirmación de baja
+    │       status → opt_out
+    │       Trigger en DB bloquea futuros mensajes (segunda barrera)
+    │
+    └─► Cualquier otra cosa (pregunta, duda, respuesta ambigua)
+            status → human_handoff
+            Sistema notifica al producer: [REQUIERE ATENCIÓN]
+            Respuesta auto: "Le paso tu mensaje a [Productor] directamente."
+            El producer atiende manualmente
+```
+
+**Resultado exitoso del flujo:** El producer intervino, actualizó el estado de
+la cotización y recuperó la oportunidad (`closed_won`) o la cerró ordenadamente
+(`closed_lost`, `opt_out`). El sistema registró cada transición en `quote_events`.
+
+---
+
 ## Restricciones de UX para el MVP
 
 - El dashboard es **web** (no app móvil) — acceso desde celular aceptable vía browser.

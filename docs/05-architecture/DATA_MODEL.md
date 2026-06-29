@@ -609,9 +609,63 @@ El modelo es portátil a cualquier instancia PostgreSQL. Puntos a revisar:
 
 ---
 
+## Relación entre el flujo de seguimiento y el modelo de datos (DECISION-005)
+
+> Esta sección muestra cómo el flujo de seguimiento de DECISION-005 se apoya
+> en las tablas ya definidas. No requiere tablas nuevas ni cambios de schema.
+> Es una guía conceptual para entender qué tabla sirve a qué propósito del flujo.
+
+### Qué tabla cumple cada rol en el flujo
+
+| Rol en el flujo | Tabla | Campo clave | Notas |
+|---|---|---|---|
+| Estado actual de la cotización | `quotes` | `status` | El estado recorre `pending_follow_up → scheduled → pending_approval → contacted → ...` |
+| Texto del mensaje aprobado | `quotes` | `approved_message` | Se llena cuando el producer aprueba en el dashboard. Es el texto que se enviará. |
+| Historia completa e inmutable | `quote_events` | `event_type` | Append-only. Cada transición de estado, cada aprobación, cada envío, queda aquí. |
+| Log conversacional (mensajes) | `whatsapp_messages` | `direction`, `body` | Outbound: mensajes que el sistema envía. Inbound: respuestas del prospect. |
+| Clasificación de respuesta del prospect | `ai_classifications` | `classification`, `confidence` | Una fila por mensaje inbound clasificado. Inmutable una vez creada. |
+| Escalamiento al producer | `human_handoffs` | `reason`, `status` | Cuando el sistema no puede responder solo. El producer lo resuelve desde el dashboard. |
+| Respuestas predefinidas (FAQ) | `approved_responses` | `keywords`, `response_text` | El producer configura respuestas fijas para preguntas comunes. No se genera con IA. |
+| Bloqueo por opt-out (primera barrera) | `prospects` | `opt_out` | Si `true`, la capa de aplicación no permite preparar mensajes. |
+| Bloqueo por opt-out (segunda barrera) | trigger en `whatsapp_messages` | — | Trigger `enforce_prospect_opt_out` rechaza INSERT si `prospect.opt_out = true`. |
+
+### Qué campos de `quotes` son clave para el flujo
+
+```
+quotes
+  ├── status              ← motor del flujo: todos los estados del seguimiento
+  ├── approved_message    ← texto final aprobado por el producer antes del envío
+  ├── follow_up_start_at  ← calculado como quote_date + producers.follow_up_hours
+  └── internal_notes      ← notas del producer; nunca exponer al prospect
+```
+
+`quotes.approved_message` actúa como "cola de aprobación" de un solo mensaje:
+el sistema lo pre-llena con el texto sugerido y el producer lo aprueba o edita.
+No es una cola multi-mensaje — cada cotización tiene un texto aprobado a la vez.
+
+### Por qué no se necesita una tabla nueva para el MVP
+
+El flujo de seguimiento manual asistido de DECISION-005 es posible sin cambios
+de schema porque:
+
+1. `quote_events` ya tiene todos los `event_type` necesarios (ver sección anterior).
+2. `quotes.approved_message` ya existe y sirve como punto de aprobación.
+3. `whatsapp_messages` ya está preparado para outbound e inbound con timestamps.
+4. `human_handoffs` ya cubre los escalamientos.
+5. El trigger de opt-out ya existe en la migración 001.
+
+**Cuando se necesitarán tablas nuevas:**
+- Multi-mensaje aprobado: si en el futuro el producer quiere aprobar M1 y M2 a la
+  vez, `approved_message` (una sola columna) no alcanza. Se necesitaría una tabla
+  `quote_pending_messages` o similar. Esto se evalúa post-piloto.
+- Templates personalizados por producer: si el producer quiere guardar sus propias
+  variantes de los templates HSM, se necesitaría una tabla `message_templates`.
+
+---
+
 ## Proximo paso
 
-Este documento está completo y alineado con DECISION-002 y DECISION-003.
+Este documento está completo y alineado con DECISION-002, DECISION-003 y DECISION-005.
 
 **Migración 001 ya generada** en `supabase/migrations/001_base_multitenant_schema.sql`.
 
