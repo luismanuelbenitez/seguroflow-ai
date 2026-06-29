@@ -2,7 +2,7 @@
 # Modelo de Datos — MVP Recuperador de Cotizaciones
 
 > **Versión:** 2.0 — 2026-06-28
-> **Estado:** Diseño conceptual actualizado. No hay migraciones todavía.
+> **Estado:** Diseño completo y alineado. Migración 001 generada en `/supabase/migrations/`. Pendiente de validación local.
 > **Alineado con:** DECISION-002 (Supabase/PostgreSQL), DECISION-003 (multi-tenant y RLS).
 >
 > **Nomenclatura:** inglés en `snake_case` para todas las tablas y columnas.
@@ -609,20 +609,28 @@ El modelo es portátil a cualquier instancia PostgreSQL. Puntos a revisar:
 
 ---
 
-## Próximo paso
+## Proximo paso
 
 Este documento está completo y alineado con DECISION-002 y DECISION-003.
 
-**Lo que habilita:**
-- Escribir la primera migración de Supabase en `/supabase/migrations/`.
-- La migración debe incluir, en orden:
-  1. Extensión `pgcrypto` y `uuid-ossp` (o usar `gen_random_uuid()` nativo de PG 14+).
-  2. Tablas de identidad: `profiles`, `producers`, `producer_members`.
-  3. Trigger de creación automática de `profiles` al registrar un usuario.
-  4. Función `get_my_producer_ids()` con `SECURITY DEFINER` y `search_path` seguro.
-  5. Tablas de negocio: `prospects`, `quotes`, `whatsapp_messages`,
-     `ai_classifications`, `human_handoffs`, `quote_events`, `approved_responses`.
-  6. Políticas RLS para cada tabla.
-  7. Trigger de opt-out en `whatsapp_messages`.
-  8. Índices.
-- Habilitar RLS con `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` en todas las tablas.
+**Migración 001 ya generada** en `supabase/migrations/001_base_multitenant_schema.sql`.
+
+Contiene: 15 ENUMs, 10 tablas, `get_my_producer_ids()`, triggers de opt-out y
+auto-profile, 25 políticas RLS, 10 tablas con RLS habilitado, 7 índices.
+
+**Siguiente paso técnico: validar en entorno local.**
+
+```bash
+supabase start
+supabase db push
+```
+
+Verificar antes de avanzar a código de aplicación:
+- El trigger `enforce_prospect_opt_out` rechaza INSERTs outbound a prospectos con `opt_out=true`.
+- La función `get_my_producer_ids()` devuelve solo los producers del usuario autenticado.
+- El trigger `on_auth_user_created` crea un `profiles` al registrar un usuario.
+- `quote_events` rechaza UPDATE y DELETE (audit log append-only).
+
+**No aplicar en producción todavía.**
+Si la validación local falla, corregir `001_base_multitenant_schema.sql` antes de
+escribir cualquier código de aplicación. Ver checklist completo en `supabase/README.md`.
