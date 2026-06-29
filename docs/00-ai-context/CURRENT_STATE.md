@@ -8,8 +8,8 @@
 
 ## Estado general
 
-**Fase:** Auth basico implementado. Listo para implementar dashboard del producer.
-**Progreso:** Auth magic link completo (login → callback → dashboard protegido). npm run build exitoso. Migracion 001 validada localmente (NO aplicada remotamente). supabase db push sigue prohibido sin confirmacion humana.
+**Fase:** Dashboard local del producer implementado con verificacion de producer_members.
+**Progreso:** Auth magic link + dashboard con contexto de producer. Verificacion de membresia activa. Estado vacio informativo cuando no hay seed local. npm run build exitoso. Migracion 001 validada solo localmente (NO aplicada remotamente). supabase db push sigue prohibido sin confirmacion humana.
 
 ---
 
@@ -139,13 +139,20 @@
         - lib/supabase/server.ts (createClient con cookies SSR)
         - app/actions/auth.ts (sendMagicLink, signOut — Server Actions)
         - app/login/page.tsx (formulario con useActionState React 19)
-        - app/auth/callback/route.ts (intercambio code → sesion)
+        - app/auth/callback/route.ts (intercambio code → sesion, open redirect protegido)
         - app/dashboard/page.tsx (ruta protegida con getUser())
-   12. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
-   13. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
-   14. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
-   15. Implementar dashboard funcional del producer (quotes, prospects)
-   16. Iniciar implementacion MVP-01 (deteccion de cotizaciones, envio de mensajes)
+✅ 12. Dashboard local del producer con verificacion de producer_members
+        - lib/producers/get-current-producer-context.ts (helper server-side)
+        - components/dashboard/dashboard-shell.tsx (layout con header + logout)
+        - components/dashboard/producer-summary-card.tsx (producer info o estado vacio)
+        - app/dashboard/page.tsx actualizado con contexto de producer
+   13. Seed local o flujo de onboarding minimo para asociar usuario a producer
+        (insertar en producers + producer_members con user_id del usuario autenticado)
+   14. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
+   15. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
+   16. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
+   17. Listar cotizaciones (quotes) y prospectos (prospects) en dashboard
+   18. Iniciar implementacion MVP-01 (deteccion de cotizaciones, envio de mensajes)
 ```
 
 ---

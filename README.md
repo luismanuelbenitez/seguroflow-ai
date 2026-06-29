@@ -106,6 +106,23 @@ No aplica migraciones. No ejecuta `supabase db push`.
 
 ---
 
+## Dashboard local
+
+El dashboard en `/dashboard` requiere sesion activa (login previo).
+
+- Verifica que el usuario tiene una membresia activa en `producer_members`.
+- Si no hay datos de prueba locales, muestra un estado vacio informativo — es comportamiento esperado.
+- No consulta ni crea datos reales.
+- No requiere migracion remota (`supabase db push`).
+- Los emails del magic link se capturan en Inbucket local: `http://localhost:54324`
+
+**Flujo local completo:**
+```
+/login → (magic link en Inbucket) → /auth/callback → /dashboard
+```
+
+---
+
 ## Supabase — seguridad de entorno
 
 Este repo apunta **exclusivamente** al proyecto Supabase `seguroflow-ai` (ref: `fawlbfkkxufyhnghynjk`).
