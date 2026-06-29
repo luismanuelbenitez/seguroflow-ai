@@ -175,6 +175,40 @@ Ver guía completa: `docs/05-architecture/LOCAL_SEEDING.md`
 
 ---
 
+## Cotizaciones demo locales
+
+La pantalla `/dashboard/quotes` muestra las cotizaciones del producer autenticado.
+
+**Requisitos previos:**
+- Login local con magic link (Mailpit: `http://localhost:54324`)
+- Seed local ejecutado (producer + membership — ver sección anterior)
+
+**Flujo:**
+
+```
+/login → /dashboard → "Ver cotizaciones demo" → /dashboard/quotes
+```
+
+En `/dashboard/quotes` hay un botón **"Crear cotización demo local"** que:
+1. Crea un prospect ficticio (`Prospecto Demo Local`, teléfono `+59800000000`)
+2. Crea una cotización de tipo `auto` con monto `UYU 5.000`
+3. Marca la cotización con `origin_channel = 'demo_local'` para identificación
+4. Es **idempotente**: si ya existe la cotización, no crea un duplicado
+
+**Lo que NO hace:**
+- No envía mensajes por WhatsApp
+- No integra IA
+- No usa datos reales
+- No aplica migraciones remotas (`supabase db push`)
+- No usa el service role key en el frontend
+
+**Notas técnicas:**
+- La tabla `quotes` usa RLS: el usuario solo ve las cotizaciones de su propio producer
+- Los datos de prospect son ficticios — el número `+59800000000` no existe en Uruguay
+- El botón está disponible en desarrollo local; en producción, las cotizaciones se cargarán vía formulario o CSV (decisión pendiente)
+
+---
+
 ## Supabase — seguridad de entorno
 
 Este repo apunta **exclusivamente** al proyecto Supabase `seguroflow-ai` (ref: `fawlbfkkxufyhnghynjk`).

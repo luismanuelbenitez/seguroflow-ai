@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { getCurrentProducerContext } from '@/lib/producers/get-current-producer-context'
 import DashboardShell from '@/components/dashboard/dashboard-shell'
 import ProducerSummaryCard from '@/components/dashboard/producer-summary-card'
@@ -79,6 +80,51 @@ export default async function DashboardPage() {
       <ProducerSummaryCard context={ctx} />
 
       {/*
+       * Acceso rapido a cotizaciones: link a /dashboard/quotes.
+       * Solo se muestra si el usuario tiene un producer asociado.
+       * Si no tiene producer, el usuario ya ve el estado vacio en ProducerSummaryCard.
+       */}
+      {ctx.hasProducer && (
+        <section
+          style={{
+            background: '#fff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            padding: '1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1rem',
+          }}
+        >
+          <div>
+            <p style={{ margin: '0 0 0.25rem', fontWeight: 600, color: '#374151', fontSize: '0.9rem' }}>
+              Cotizaciones
+            </p>
+            <p style={{ margin: 0, color: '#6b7280', fontSize: '0.82rem' }}>
+              Lista de cotizaciones en seguimiento del producer
+            </p>
+          </div>
+          <Link
+            href="/dashboard/quotes"
+            style={{
+              display: 'inline-block',
+              padding: '0.5rem 1rem',
+              background: '#2563eb',
+              color: '#fff',
+              borderRadius: '6px',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              textDecoration: 'none',
+            }}
+          >
+            Ver cotizaciones demo
+          </Link>
+        </section>
+      )}
+
+      {/*
        * Seccion de proximos pasos del MVP.
        * Se muestra siempre, independientemente de si hay producer.
        * Sirve como roadmap visual para el equipo de desarrollo.
@@ -110,11 +156,11 @@ export default async function DashboardPage() {
             fontSize: '0.88rem',
           }}
         >
-          <li>Seed local: crear producer + producer_member para el usuario actual</li>
-          <li>Listar cotizaciones en seguimiento (tabla <code>quotes</code>)</li>
+          <li>✅ Listar cotizaciones demo en /dashboard/quotes</li>
+          <li>Carga de cotizaciones reales (formulario o CSV)</li>
           <li>Ver prospectos del producer (tabla <code>prospects</code>)</li>
           <li>Panel de handoffs pendientes (tabla <code>human_handoffs</code>)</li>
-          <li>Carga de cotizaciones via formulario o CSV</li>
+          <li>Integracion WhatsApp sandbox (Twilio) para mensajes de seguimiento</li>
         </ul>
         <p
           style={{

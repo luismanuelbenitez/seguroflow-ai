@@ -8,8 +8,8 @@
 
 ## Estado general
 
-**Fase:** Seed local validado. Dashboard con producer demo funcionando.
-**Progreso:** Seed local ejecutado y verificado (producer + membership en DB local). Migracion 002 con GRANTs creada (bug fix: migracion 001 no tenia permisos DML para el rol authenticated — PostgREST retornaba permission denied). RLS verificado via REST API: authenticated solo ve sus propios datos. npm run build exitoso. migraciones aplicadas solo localmente (NO remotamente). supabase db push sigue prohibido sin confirmacion humana.
+**Fase:** Quotes demo local implementado. Dashboard con lista de cotizaciones y creacion demo funcionando.
+**Progreso:** Seed local ejecutado y verificado (producer + membership en DB local). Pantalla /dashboard/quotes con lista de quotes, boton "Crear cotizacion demo local" (Server Action idempotente), y navegacion desde /dashboard. Migracion 002 con GRANTs (bug fix DML). RLS verificado. npm run build exitoso. Migraciones aplicadas solo localmente (NO remotamente). supabase db push sigue prohibido sin confirmacion humana.
 
 **Usuario demo local:** demo@seguroflow.local (user_id: 491e5a58-02f2-49f0-a7af-06cc169f8fc1 — valido solo en la DB local actual)
 
@@ -163,13 +163,22 @@
         - Sin GRANTs, el rol authenticated no podia hacer SELECT/INSERT/UPDATE/DELETE
         - Solucion: migracion 002 con GRANTs explicitos para authenticated y service_role
         - Aplicada localmente con supabase db reset (NO remotamente)
-   15. Pantalla inicial de cotizaciones: listar quotes del producer demo en /dashboard
-        (requiere seed de quotes demo o formulario de carga manual)
-   16. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
-   17. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
-   18. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
-   19. Listar cotizaciones (quotes) y prospectos (prospects) en dashboard
-   20. Iniciar implementacion MVP-01 (deteccion de cotizaciones, envio de mensajes)
+✅ 15. Pantalla de cotizaciones demo: /dashboard/quotes
+        - lib/quotes/get-quotes-for-current-producer.ts (helper con query N+1 evitado)
+        - app/actions/quotes.ts (Server Action createDemoQuote — idempotente)
+        - components/dashboard/quotes-list.tsx (tabla con estado vacio, error, badges)
+        - components/dashboard/create-demo-quote-button.tsx (Client Component con useTransition)
+        - app/dashboard/quotes/page.tsx (ruta protegida, breadcrumb, link a /dashboard)
+        - app/dashboard/page.tsx actualizado: link "Ver cotizaciones demo"
+        - README.md: seccion "Cotizaciones demo locales"
+        - Flujo: login → /dashboard → /dashboard/quotes → crear demo → ver en lista
+        - No envia WhatsApp, no usa IA, no usa service role, no usa datos reales
+   16. Carga de cotizaciones reales: formulario manual o CSV (decision pendiente en CURRENT_STATE.md)
+   17. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
+   18. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
+   19. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
+   20. Carga de cotizaciones reales (formulario o CSV) — ver DECISION pendiente
+   21. Iniciar implementacion MVP-01 (deteccion de cotizaciones, envio de mensajes)
 ```
 
 ---
