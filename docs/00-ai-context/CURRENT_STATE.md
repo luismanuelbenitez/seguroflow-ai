@@ -8,8 +8,8 @@
 
 ## Estado general
 
-**Fase:** Arquitectura definida. Primera migración generada. Pre-aplicación.
-**Progreso:** Documentación completa. Primera migración de Supabase generada (no aplicada remotamente aún).
+**Fase:** Skeleton tecnico validado. Listo para implementar primer modulo.
+**Progreso:** Next.js 15 skeleton creado y buildeado. Migracion 001 validada localmente con supabase db reset. Tipos TypeScript generados desde DB local.
 
 ---
 
@@ -95,8 +95,8 @@
 
 ## Qué NO se debe hacer todavía
 
-- **No ejecutar la migración contra producción** sin haberla validado en local. Ver checklist en `supabase/README.md`.
-- **No escribir código de aplicación todavía.** El siguiente paso técnico es validar la migración en entorno local.
+- **No ejecutar supabase db push** (migracion remota) hasta que el proyecto Supabase en la nube este creado y configurado.
+- **No avanzar a funcionalidad real** sin antes implementar Auth (login/logout) para el producer.
 - **No crear infraestructura productiva** hasta tener los templates HSM aprobados por Meta.
 - **No contactar prospectos reales** con mensajes de prueba.
 - **No comprometerse con productores** en fechas de entrega sin tener la primera migración de Supabase validada.
@@ -113,12 +113,16 @@
 ✅ 3. Modelo multi-tenant y RLS definido (DECISION-003)
 ✅ 4. DATA_MODEL.md actualizado: inglés, 11 tablas, producer_id, enums, índices
 ✅ 5. Primera migración de Supabase generada: supabase/migrations/001_base_multitenant_schema.sql
-   6. Entrevistar 3–5 productores → DISCOVERY_QUESTIONS.md
-   7. Crear cuentas: Supabase, Anthropic API, Twilio sandbox
-   8. Diseñar y enviar templates HSM a Meta (1–7 días hábiles de aprobación)
-   9. Configurar repositorio: Next.js + TypeScript + Supabase + Dockerfile
-  10. Validar migración 001 en entorno local (supabase start + db push)
-  11. Iniciar programación siguiendo CODING_RULES.md
+✅ 6. Skeleton Next.js 15 creado: app/, lib/, server/, types/, componentes base
+✅ 7. npm install + npm run build exitosos (Next.js 15.5.19)
+✅ 8. supabase db reset local exitoso: migracion 001 aplicada sin errores
+✅ 9. types/database.ts generado desde DB local (10 tablas, ENUMs, funciones)
+✅ 10. supabase/config.toml creado (supabase init)
+   11. Entrevistar 3-5 productores → DISCOVERY_QUESTIONS.md
+   12. Crear cuentas cloud: Supabase proyecto, Anthropic API, Twilio sandbox
+   13. Disenar y enviar templates HSM a Meta (1-7 dias habiles de aprobacion)
+   14. Implementar Auth: login/logout con Supabase Auth magic link
+   15. Iniciar implementacion MVP-01 siguiendo CODING_RULES.md
 ```
 
 ---
