@@ -357,7 +357,10 @@
         - Git remotes actualizados:
           old-origin → https://github.com/mbenitezmdeo/seguroflow-ai.git (repo anterior)
           origin → https://github.com/luismanuelbenitez/seguroflow-ai.git (repo nuevo)
-        - Push exitoso al repo nuevo: github.com/luismanuelbenitez/seguroflow-ai
+        - Push pendiente: requiere PAT de la cuenta luismanuelbenitez en GitHub.
+          Commit local listo (hash: 98c419a). Ejecutar manualmente:
+          git push -u origin main
+          Usando las credenciales de la cuenta luismanuelbenitez.
         - docs/06-integrations/VERCEL_DEPLOY_PLAN.md creado:
           Variables requeridas, checklist pre-deploy, configuracion de Auth en cloud,
           protocolo de migraciones (requiere verificacion de project-ref y autorizacion humana)
