@@ -33,3 +33,5 @@ supabase/.temp/
 
 # TypeScript build info (generado por tsc/next build, no se commitea)
 tsconfig.tsbuildinfo
+
+.vercel
