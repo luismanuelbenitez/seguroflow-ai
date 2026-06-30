@@ -135,29 +135,6 @@ export default function LoginPage() {
         </p>
       )}
 
-      {/* Credenciales de demo local — visible solo en entorno local */}
-      <div
-        style={{
-          marginTop: '2rem',
-          padding: '0.875rem',
-          background: '#f0f9ff',
-          border: '1px solid #bae6fd',
-          borderRadius: '8px',
-          fontSize: '0.82rem',
-          color: '#0369a1',
-        }}
-      >
-        <p style={{ margin: '0 0 0.4rem', fontWeight: 600 }}>Acceso demo local</p>
-        <p style={{ margin: '0 0 0.25rem' }}>
-          Email: <code style={{ background: '#e0f2fe', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>demo@seguroflow.local</code>
-        </p>
-        <p style={{ margin: '0 0 0.5rem' }}>
-          Password: <code style={{ background: '#e0f2fe', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>Demo123456!</code>
-        </p>
-        <p style={{ margin: 0, color: '#64748b', fontSize: '0.78rem' }}>
-          No usar datos reales. Solo entorno local.
-        </p>
-      </div>
     </main>
   )
 }
